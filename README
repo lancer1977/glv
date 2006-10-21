@@ -1,0 +1,70 @@
+    GLV library
+    Version 0.3
+    Written by Karl Robillard
+
+
+Overview
+--------
+
+The GLV library provides a small, cross-platform, C interface for creating a
+window or fullscreen display with an OpenGL context.  It was written for use
+in games and demos as an alternative to larger libraries such as GLUT, SDL,
+GLFW, PLIB, etc.  There are no thread, joystick, or timer wrappers here.
+
+The currently supported environments are Linux, Mac OS X and Windows.
+The Linux version is the most complete, while the Mac version is the least
+with no fullscreen support at the moment.
+
+Read the LICENSE file for terms of use.
+
+HTML documentation is provided in the doc/html/ directory.
+
+
+
+Requirements
+------------
+
+OpenGL.  The examples use the glu library.
+
+The X11 version is built with the XFree86 XF86VidMode extension by default.
+This can be disabled in the Makefile.  Code has been written for the
+Xi Graphics XME fullscreen extension but it has not been tested.
+
+The Windows version has been built with Cygwin and Visual C++ 6 using NMAKE.
+
+
+
+Installation
+------------
+
+Linux
+
+  Run the following commands from the glv directory:
+
+    > make -C x11
+    > make -C examples
+    > su
+    > make -C x11 install
+
+
+Windows
+
+  Note that the Windows version has had very little testing.
+
+  Run the following commands from the command prompt:
+
+    > cd win32
+    > nmake
+    > cd ..\examples
+    > nmake -f Makefile.vc
+
+
+Mac OS X
+
+  Run the following commands from the glv directory:
+
+    > make -C mac
+    > make -C examples -f Makefile.mac
+    > su
+    > make -C mac install
+

@@ -1,0 +1,20 @@
+                              GLV Change Log
+
+
+V0.3.0 - 11 Nov 2004
+
+    * Mac OS X version (without fullscreen support).
+    * glv_queryModes() is now called without a GLView pointer.
+    * Switching between fullscreen and window is now reliable on X11.
+    * The example 'complete' now reports key names.
+
+
+V0.2.0 - 18 Feb 2004
+
+    * Now using a single event handler function and GLViewEvent.
+
+
+V0.1.0 -  3 Sep 2003
+
+    * Initial public release.
+
