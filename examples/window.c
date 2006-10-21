@@ -100,7 +100,7 @@ void eventHandler( GLView* view, GLViewEvent* event )
 
 void printExtensions()
 {
-    char buf[80];
+    GLubyte buf[80];
     GLubyte* cp;
     const GLubyte* all;
 
@@ -128,6 +128,8 @@ int main( int argc, char** argv )
     GLView* view;
     GLViewMode mode;
 
+    (void) argc;
+    (void) argv;
 
     view = glv_create( GLV_ATTRIB_DOUBLEBUFFER );
     if( view )

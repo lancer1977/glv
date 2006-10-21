@@ -1,6 +1,5 @@
 #----------------------------------------------------------------------------
 # Makefile for GNU make
-# $Id: Makefile,v 1.9 2004/11/13 22:46:49 karl Exp $
 #----------------------------------------------------------------------------
 
 
@@ -28,6 +27,7 @@ HEADER_DIR   = /usr/local/include/GL
 
 GLV_CFLAGS  += -DUSE_XF86VMODE
 GLV_LIBS    += -L/usr/X11R6/lib -lXxf86vm
+#GLV_LIBS    += -L/usr/X11R6/lib64 -lXxf86vm
 
 #GLV_CFLAGS += -DUSE_XME
 #GLV_LIBS   += -L/usr/X11R6/lib -lXxme

@@ -4,7 +4,7 @@ project "examples"
 
 default [
     debug
-    ;warn
+    warn
     opengl
     win32 [
         include_from %../win32
@@ -15,7 +15,7 @@ default [
         libs_from %../x11 {glv}
         ;cflags {-Wno-unused-parameter}
     ]
-    osx [
+    macx [
         include_from %../mac
         libs_from %../mac {glv}
     ]
