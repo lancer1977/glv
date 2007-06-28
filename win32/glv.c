@@ -1,7 +1,7 @@
 /*===========================================================================/
 
   GLV Library for Windows
-  Copyright (C) 2003-2006 Karl Robillard
+  Copyright (C) 2003-2007  Karl Robillard
 
 /===========================================================================*/
 
@@ -86,14 +86,14 @@ int WINAPI WinMain( HINSTANCE hi, HINSTANCE hPrevInstance,
 
 
 #define COPY_KEY(ve,t) \
-	_keyLParam = lParam; \
-	_keyWParam = wParam; \
+    _keyLParam = lParam; \
+    _keyWParam = wParam; \
         ve.type  = t; \
         ve.code  = wParam; \
         ve.state = 0; \
-	if( GetKeyState( VK_SHIFT )   & 0x8000 ) ve.state |= GLV_MASK_SHIFT; \
-	if( GetKeyState( VK_CONTROL ) & 0x8000 ) ve.state |= GLV_MASK_CTRL; \
-	if( GetKeyState( VK_MENU )    & 0x8000 ) ve.state |= GLV_MASK_ALT; \
+    if( GetKeyState( VK_SHIFT )   & 0x8000 ) ve.state |= GLV_MASK_SHIFT; \
+    if( GetKeyState( VK_CONTROL ) & 0x8000 ) ve.state |= GLV_MASK_CTRL; \
+    if( GetKeyState( VK_MENU )    & 0x8000 ) ve.state |= GLV_MASK_ALT; \
         ve.x     = 0; \
         ve.y     = 0;
 
@@ -116,8 +116,8 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
             break;
 
         case WM_CLOSE:
-	    ve.type = GLV_EVENT_CLOSE;
-	    _cv->eventHandler( _cv, &ve );
+            ve.type = GLV_EVENT_CLOSE;
+            _cv->eventHandler( _cv, &ve );
             //PostQuitMessage( 0 );
             break;
 
@@ -151,10 +151,10 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
                 _cv->width  = w;
                 _cv->height = h;
 
-		ve.type = GLV_EVENT_RESIZE;
-		ve.x    = w;
-		ve.y    = h;
-		_cv->eventHandler( _cv, &ve );
+                ve.type = GLV_EVENT_RESIZE;
+                ve.x    = w;
+                ve.y    = h;
+                _cv->eventHandler( _cv, &ve );
             }
         }
             break;
@@ -193,7 +193,13 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
             //MessageBox( hWnd, "WM_LBUTTONDOWN", "Message", MB_OK );
 
             ve.type  = GLV_EVENT_BUTTON_DOWN;
-            ve.code  = message;
+            switch( message )
+            {
+                case WM_LBUTTONDOWN: ve.code = GLV_BUTTON_LEFT;   break;
+                case WM_RBUTTONDOWN: ve.code = GLV_BUTTON_RIGHT;  break;
+                case WM_MBUTTONDOWN: ve.code = GLV_BUTTON_MIDDLE; break;
+                default:             ve.code = 0;                 break;
+            }
             ve.state = LOWORD(wParam);
             ve.x     = LOWORD(lParam);
             ve.y     = HIWORD(lParam);
@@ -209,10 +215,10 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
             ve.type  = GLV_EVENT_BUTTON_UP;
             switch( message )
             {
-		case WM_LBUTTONUP: ve.code = GLV_BUTTON_LEFT;   break;
-		case WM_RBUTTONUP: ve.code = GLV_BUTTON_RIGHT;  break;
-		case WM_MBUTTONUP: ve.code = GLV_BUTTON_MIDDLE; break;
-		default:           ve.code = 0;                 break;
+                case WM_LBUTTONUP: ve.code = GLV_BUTTON_LEFT;   break;
+                case WM_RBUTTONUP: ve.code = GLV_BUTTON_RIGHT;  break;
+                case WM_MBUTTONUP: ve.code = GLV_BUTTON_MIDDLE; break;
+                default:           ve.code = 0;                 break;
             }
             ve.state = LOWORD(wParam);
             ve.x     = LOWORD(lParam);
@@ -230,12 +236,12 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
             break;
 
         case WM_MOUSEWHEEL:
-	    ve.type  = GLV_EVENT_WHEEL;
-	    ve.code  = 0;
-	    ve.state = LOWORD(wParam);
-	    ve.x     = 0;
-	    ve.y     = (short) HIWORD(wParam);
-	    _cv->eventHandler( _cv, &ve );
+            ve.type  = GLV_EVENT_WHEEL;
+            ve.code  = 0;
+            ve.state = LOWORD(wParam);
+            ve.x     = 0;
+            ve.y     = (short) HIWORD(wParam);
+            _cv->eventHandler( _cv, &ve );
 
             //event.setXY( LOWORD(lParam), _displayH - HIWORD(lParam) );
             break;

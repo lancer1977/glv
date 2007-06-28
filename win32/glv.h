@@ -3,7 +3,7 @@
 /*===========================================================================/
 
   GLV Library for Windows
-  Copyright (C) 2003-2006 Karl Robillard
+  Copyright (C) 2003-2007  Karl Robillard
 
 /===========================================================================*/
 
@@ -82,9 +82,9 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_EVENT_USER          32
 
 /* GLViewEvent code for GLV_EVENT_BUTTON_DOWN/UP events */
-#define GLV_BUTTON_LEFT     WM_LBUTTONDOWN
-#define GLV_BUTTON_MIDDLE   WM_MBUTTONDOWN
-#define GLV_BUTTON_RIGHT    WM_RBUTTONDOWN
+#define GLV_BUTTON_LEFT     1
+#define GLV_BUTTON_RIGHT    2
+#define GLV_BUTTON_MIDDLE   3
 
 /* GLViewEvent y for GLV_EVENT_WHEEL events */
 #define GLV_WHEEL_DELTA     120
