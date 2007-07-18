@@ -3,7 +3,7 @@
 /*===========================================================================/
 
   GLV Library for Mac OS X
-  Copyright (C) 2003-2006 Karl Robillard
+  Copyright (C) 2003-2007 Karl Robillard
 
 /===========================================================================*/
 
@@ -46,6 +46,7 @@ typedef struct {
     void (*eventHandler)( void*, GLViewEvent* );
     unsigned short flags;
     UInt32 modifiers;
+    UInt32 buttonsHeld;
     int modeId;
     Rect bound;
     EventHandlerUPP windowEventUUP;

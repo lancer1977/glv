@@ -1,7 +1,7 @@
 /*===========================================================================/
 
   GLV Library for Mac OS X
-  Copyright (C) 2004-2006 Karl Robillard
+  Copyright (C) 2004-2007 Karl Robillard
 
   TODO:
     [ ] Fullscreen
@@ -22,6 +22,12 @@
 #define FLAG_ATTRIB                 0x0007
 #define FLAG_FULLSCREEN_MODE        0x0040
 #define FLAG_FILTER_REPEAT          0x0080
+
+
+static UInt32 mouseButtonModifier[3] =
+{
+    0, GLV_MASK_LEFT, GLV_MASK_RIGHT, GLV_MASK_MIDDLE
+};
 
 
 static void glv_nullHandler( void* v, GLViewEvent* e ) {}
@@ -68,7 +74,7 @@ static void modifersChanged( GLView* view, UInt32 modifiers )
 #define COPY_KEY(ve,t) \
         ve.type  = t; \
         ve.code  = code; \
-        ve.state = modifiers; \
+        ve.state = modifiers | view->buttonsHeld; \
         ve.x     = 0; \
         ve.y     = 0;
 
@@ -145,6 +151,11 @@ static pascal OSStatus windowEventHandler( EventHandlerCallRef myHandler,
             case kEventMouseDown:
                 //printf( "KR mouse down\n" );
 
+                // Let system widgets get first crack at event.
+                result = CallNextEventHandler( myHandler, event );
+                if( eventNotHandledErr != result )
+                    break;
+
                 GetEventParameter( event, kEventParamMouseButton,
                                    typeMouseButton, NULL,
                                    sizeof(EventMouseButton), NULL, &button );
@@ -155,14 +166,17 @@ static pascal OSStatus windowEventHandler( EventHandlerCallRef myHandler,
                                    typeUInt32, NULL,
                                    sizeof(UInt32), NULL, &modifiers );
 
+                if( button < 4 )
+                    view->buttonsHeld |= mouseButtonModifier[ button ];
+
                 ve.type  = GLV_EVENT_BUTTON_DOWN;
                 ve.code  = button;
-                ve.state = modifiers;
+                ve.state = modifiers | view->buttonsHeld;
                 ve.x     = ((int) location.x) - view->bound.left;
                 ve.y     = ((int) location.y) - view->bound.top;
                 view->eventHandler( view, &ve );
 
-                // result remains eventNotHandledErr so it can propagate.
+                result = noErr;
                 break;
 
             case kEventMouseUp:
@@ -178,9 +192,12 @@ static pascal OSStatus windowEventHandler( EventHandlerCallRef myHandler,
                                    typeUInt32, NULL,
                                    sizeof(UInt32), NULL, &modifiers );
 
+                if( button < 4 )
+                    view->buttonsHeld &= ~mouseButtonModifier[ button ];
+
                 ve.type  = GLV_EVENT_BUTTON_UP;
                 ve.code  = button;
-                ve.state = modifiers;
+                ve.state = modifiers | view->buttonsHeld;
                 ve.x     = ((int) location.x) - view->bound.left;
                 ve.y     = ((int) location.y) - view->bound.top;
                 view->eventHandler( view, &ve );
@@ -204,7 +221,7 @@ static pascal OSStatus windowEventHandler( EventHandlerCallRef myHandler,
 
                 ve.type  = GLV_EVENT_MOTION;
                 ve.code  = button;
-                ve.state = modifiers;
+                ve.state = modifiers | view->buttonsHeld;
                 ve.x     = ((int) location.x) - view->bound.left;
                 ve.y     = ((int) location.y) - view->bound.top;
                 view->eventHandler( view, &ve );
@@ -501,6 +518,7 @@ GLView* glv_create( int attributes )
     view->eventHandler   = glv_nullHandler;
     view->windowEventUUP = NewEventHandlerUPP( windowEventHandler );
     view->modifiers      = 0;
+    view->buttonsHeld    = 0;
 
 
     OSStatus status;
