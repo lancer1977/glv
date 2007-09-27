@@ -128,6 +128,20 @@ void redraw()
 }
 
 
+void clipboard( const char* data, int len, void* user )
+{
+    const char* end = data + len;
+
+    (void) user;
+
+    printf( "clipboard length: %d\n", len );
+    printf( "clipboard data:   {" );
+    while( data != end )
+        putchar( *data++ );
+    printf( "}\n" );
+}
+
+
 void eventHandler( GLView* view, GLViewEvent* event )
 {
     switch( event->type )
@@ -211,6 +225,14 @@ void eventHandler( GLView* view, GLViewEvent* event )
                     kfilter ^= 1;
                     glv_filterRepeatKeys( view, kfilter );
                     printf( "repeat filter %s\n", kfilter ? "on" : "off" );
+                    break;
+
+                case KEY_v:
+                    if( event->state & GLV_MASK_CTRL )
+                    {
+                        if( ! glv_clipboardText( view, clipboard, 0 ) )
+                            printf( "Clipboard empty\n" );
+                    }
                     break;
 
                 case KEY_Escape:

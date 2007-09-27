@@ -167,6 +167,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <glv.h>
+#include <X11/Xatom.h>
 
 #ifdef USE_XF86VMODE
 #include <X11/extensions/xf86vmode.h>
@@ -1097,10 +1098,10 @@ void glv_setEventHandler( GLView* view, GLViewEvent_f func )
 }
 
 
-static Bool _predicateProc( Display* disp, XEvent* event, char* arg )
+static Bool _predicateWait( Display* disp, XEvent* event, XPointer arg )
 {
     (void) disp;
-    if( event->xany.window == ((Window) arg) )
+    if( event->xany.window == ((GLView*) arg)->window )
         return True;
     else
         return False;
@@ -1115,7 +1116,7 @@ static Bool _predicateProc( Display* disp, XEvent* event, char* arg )
 void glv_waitEvent( GLView* view )
 {
     XEvent event;
-    XPeekIfEvent( view->display, &event, _predicateProc, (char*) view->window );
+    XPeekIfEvent( view->display, &event, _predicateWait, (XPointer) view );
 }
 
 
@@ -1359,6 +1360,104 @@ int glv_ascii()
     if( XLookupString( glv_keyEvent, buf, 4, NULL, NULL ) == 1 )
         return *buf;
     return 0;
+}
+
+
+static Bool _predicateSelection( Display* disp, XEvent* event, XPointer arg )
+{
+    (void) disp;
+    (void) arg;
+
+    if( event->type == SelectionNotify )
+        return True;
+    else
+        return False;
+}
+
+
+/**
+  Calls func with the current system clipboard text.
+
+  \return Non-zero if data is present and func is called.
+*/
+int glv_clipboardText( GLView* view,
+                       void (*func)(const char* data, int len, void* user),
+                       void* user )
+{
+    Display* disp;
+    Window owner;
+    int format;
+    Atom type;
+    Atom atom_sel;
+    unsigned long nitems;
+    unsigned long bytesLeft;
+    unsigned long dummy;
+    unsigned char* data;
+
+    disp = view->display;
+
+    owner = XGetSelectionOwner( disp, XA_PRIMARY );
+    if( owner == None )
+        return 0;
+    if( owner == view->window )
+        return 0;
+
+    atom_sel  = XInternAtom( disp, "APP_SELECTION", False );
+
+    XConvertSelection( disp, XA_PRIMARY, XA_STRING, atom_sel,
+                       view->window, CurrentTime /*view->lastInputTime*/ );
+
+    // Wait for SelectionNotify event.
+    {
+    XEvent event;
+    XIfEvent( disp, &event, _predicateSelection, NULL );
+    if( event.xselection.property == None )
+        return 0;
+    }
+
+    // Query size of data.
+    data = NULL;
+    XGetWindowProperty( disp, view->window, atom_sel,
+                        0, 0, False,
+                        AnyPropertyType, &type, &format,
+                        &nitems, &bytesLeft, &data );
+    if( type == None )
+        return 0;
+    if( data != NULL )
+    {
+        XFree( data );
+        data = NULL;
+    }
+    if( bytesLeft < 1 )
+        return 0;
+
+    // Retrieve data.
+    XGetWindowProperty( disp, view->window, atom_sel,
+                        0, (bytesLeft+3)/4, False,
+                        AnyPropertyType,&type, &format,
+                        &nitems, &dummy, &data );
+    if( (type == None) || (data == NULL) )
+        return 0;
+
+    func( (char*) data, nitems * format / 8, user );
+
+    XFree( data );
+    //XDeleteProperty( disp, view->window, atom_sel );
+    return 1;
+
+#if 0
+    char* clip;
+    int size;
+
+    clip = XFetchBytes( disp, &size );
+    if( clip )
+    {
+        func( clip, size, user );
+        XFree( clip );
+        return 1;
+    }
+    return 0;
+#endif
 }
 
 

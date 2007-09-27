@@ -1101,4 +1101,22 @@ int glv_ascii()
 }
 
 
+/**
+  Calls func with the current system clipboard text.
+
+  \return Non-zero if data is present and func is called.
+*/
+int glv_clipboardText( GLView* view,
+                       void (*func)(const char* data, int len, void* user),
+                       void* user )
+{
+    // TODO
+    (void) view;
+    (void) func;
+    (void) user;
+
+    return 0;
+}
+
+
 /*EOF*/

@@ -695,4 +695,29 @@ int glv_ascii()
 }
 
 
+/**
+  Calls func with the current system clipboard text.
+
+  \return Non-zero if data is present and func is called.
+*/
+int glv_clipboardText( GLView* view,
+                       void (*func)(const char* data, int len, void* user),
+                       void* user )
+{
+    LPTSTR clip;
+   
+    if( ! IsClipboardFormatAvailable(CF_TEXT) )
+        return 0;
+    if( ! OpenClipboard(NULL) )
+        return 0;
+
+    clip = GlobalLock( GetClipboardData(CF_TEXT) );
+    func( clip, strlen(clip), user );
+    GlobalUnlock( clip );
+
+    CloseClipboard();
+    return 1;
+}
+
+
 /*EOF*/

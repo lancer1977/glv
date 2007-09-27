@@ -40,7 +40,7 @@ GLV_LIBS    += -L/usr/X11R6/lib -lXxf86vm
 all: $(GLV_TARGET)
  
 $(GLV_TARGET): $(GLV_OBJECTS)
-	$(LINK) -o $@ -soname libglv.so.$(VER_M) $(GLV_LFLAGS) $(GLV_OBJECTS) $(GLV_LIBS)
+	$(LINK) -o $@ -soname libglv.so $(GLV_LFLAGS) $(GLV_OBJECTS) $(GLV_LIBS)
 	ln -sf $(GLV_TARGET) libglv.so
  
 .PHONY: clean
