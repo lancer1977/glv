@@ -24,7 +24,7 @@
 #define FLAG_FILTER_REPEAT          0x0080
 
 
-static UInt32 mouseButtonModifier[3] =
+static UInt32 mouseButtonModifier[4] =
 {
     0, GLV_MASK_LEFT, GLV_MASK_RIGHT, GLV_MASK_MIDDLE
 };
