@@ -1,16 +1,21 @@
 # GNU Makefile
 
 
-ARCHIVE = glv-0.2
+ARCHIVE = libglv-0.3
 
 DIST_FILES = \
 	LICENSE \
 	README \
 	ChangeLog \
-	unix/glv.c \
-	unix/glv.h \
-	unix/glv_keys.h \
-	unix/Makefile \
+	glv.spec \
+	x11/glv.c \
+	x11/glv.h \
+	x11/glv_keys.h \
+	x11/Makefile \
+	mac/glv.c \
+	mac/glv.h \
+	mac/glv_keys.h \
+	mac/Makefile \
 	win32/glv.c \
 	win32/glv.h \
 	win32/glv_keys.h \
@@ -18,13 +23,14 @@ DIST_FILES = \
 	win32/GNUmakefile \
 	examples/project.r \
 	examples/Makefile \
-	examples/Makefile.vc \
-	examples/Makefile.cygwin \
 	examples/keystr.h \
 	examples/complete.c \
 	examples/doc.c \
 	examples/window.c \
 	doc/html
+
+#	examples/Makefile.vc \
+#	examples/Makefile.cygwin \
 
 
 all:
@@ -48,6 +54,7 @@ dist:
 	tar -C /tmp -cf $(ARCHIVE).tar $(ARCHIVE)
 	rm -rf /tmp/$(ARCHIVE)
 	gzip -9f $(ARCHIVE).tar
+	mv $(ARCHIVE).tar.gz $(ARCHIVE).tgz
 
 
 #EOF

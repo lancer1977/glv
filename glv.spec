@@ -1,41 +1,54 @@
 Summary: A small, cross-platform display library for OpenGL
-Name: glv
+Name: libglv
 Version: 0.3
 Release: 1
-Copyright: MIT
+License: MIT
 Group: Development/Libraries
 Source: http://outguard.sourceforge.net/arc/%{name}-%{version}.tgz
 Url: http://outguard.sourceforge.net/download.html
 Packager: Karl Robillard <wickedsmoke@users.sf.net>
-BuildRoot: /var/tmp/%{name}-buildroot
+BuildRoot: %{_tmppath}/%{name}-%{version}-build
 Prefix: /usr/local
+%if 0%{?fedora_version}
+BuildRequires: mesa-libGL-devel libXxf86vm-devel
+%endif
+%if 0%{?mandriva_version}
+BuildRequires: libmesagl1-devel
+%endif
+%if 0%{?suse_version}
+BuildRequires: Mesa-devel
+%endif
 
 %description
-The GLV library provides a small, cross-platform interface for creating
+The GLV library provides a small, cross-platform, C interface for creating
 a window or fullscreen display with an OpenGL context.
 
 %prep
 %setup -q
 
 %build
-cd unix
-make
+make -C x11
 
 %install
 rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT%{prefix}/lib
-mkdir -p $RPM_BUILD_ROOT%{prefix}/include/GL
-install -m 644 lib/*.so $RPM_BUILD_ROOT%{prefix}/lib
-install -m 644 unix/*.h $RPM_BUILD_ROOT%{prefix}/include/GL
+mkdir -p $RPM_BUILD_ROOT%{_libdir}
+mkdir -p $RPM_BUILD_ROOT%{_includedir}/GL
+install -m 644 x11/*.h $RPM_BUILD_ROOT%{_includedir}/GL
+install -m 644 x11/libglv.so.0.3 $RPM_BUILD_ROOT%{_libdir}
+ln -s libglv.so.0.3 $RPM_BUILD_ROOT%{_libdir}/libglv.so.0
+ln -s libglv.so.0.3 $RPM_BUILD_ROOT%{_libdir}/libglv.so
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
+%defattr(-,root,root)
 %doc ChangeLog LICENSE README
-%dir %{prefix}/include/%{name}
-%{prefix}/lib/libglv.so
-%{prefix}/include/%{name}
+%{_libdir}/libglv.so
+%{_libdir}/libglv.so.0
+%{_libdir}/libglv.so.0.3
+%{_includedir}/GL/glv.h
+%{_includedir}/GL/glv_keys.h
 
 
 %changelog

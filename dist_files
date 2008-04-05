@@ -1,10 +1,10 @@
 glv/README
 glv/LICENSE
 glv/ChangeLog
-glv/unix/glv.c
-glv/unix/glv.h
-glv/unix/glv_keys.h
-glv/unix/Makefile
+glv/x11/glv.c
+glv/x11/glv.h
+glv/x11/glv_keys.h
+glv/x11/Makefile
 glv/mac/glv.c
 glv/mac/glv.h
 glv/mac/glv_keys.h

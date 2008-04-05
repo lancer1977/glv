@@ -21,13 +21,14 @@ GLV_INCPATH  = -I.
 GLV_LFLAGS   = -shared
 GLV_LIBS     =
 GLV_OBJECTS  = 	glv.o
-INSTALL_DIR  = /usr/local/lib
+LIB_DIR      = /usr/local/lib
 HEADER_DIR   = /usr/local/include/GL
 
 
 GLV_CFLAGS  += -DUSE_XF86VMODE
-GLV_LIBS    += -L/usr/X11R6/lib -lXxf86vm
-#GLV_LIBS    += -L/usr/X11R6/lib64 -lXxf86vm
+GLV_LIBS    += -lXxf86vm
+#GLV_LIBS    += -L/usr/X11R6/lib
+#GLV_LIBS    += -L/usr/X11R6/lib64
 
 #GLV_CFLAGS += -DUSE_XME
 #GLV_LIBS   += -L/usr/X11R6/lib -lXxme
@@ -40,8 +41,9 @@ GLV_LIBS    += -L/usr/X11R6/lib -lXxf86vm
 all: $(GLV_TARGET)
  
 $(GLV_TARGET): $(GLV_OBJECTS)
-	$(LINK) -o $@ -soname libglv.so $(GLV_LFLAGS) $(GLV_OBJECTS) $(GLV_LIBS)
-	ln -sf $(GLV_TARGET) libglv.so
+	$(LINK) -o $@ -soname libglv.so.$(VER_M) $(GLV_LFLAGS) $(GLV_OBJECTS) $(GLV_LIBS)
+	ln -sf libglv.so.$(VER_MM) libglv.so.$(VER_M)
+	ln -sf libglv.so.$(VER_MM) libglv.so
  
 .PHONY: clean
 clean:
@@ -51,15 +53,15 @@ clean:
 install:
 	mkdir -p $(HEADER_DIR)
 	$(INSTALL) glv.h glv_keys.h $(HEADER_DIR)
-	$(INSTALL) $(GLV_TARGET) $(INSTALL_DIR)
-	ln -sf libglv.so.$(VER_MM) $(INSTALL_DIR)/libglv.so
-	$(LDCONFIG) -v -n $(INSTALL_DIR)
+	$(INSTALL) $(GLV_TARGET) $(LIB_DIR)
+	ln -sf libglv.so.$(VER_MM) $(LIB_DIR)/libglv.so
+	$(LDCONFIG) -v -n $(LIB_DIR)
 
 .PHONY: uninstall
 uninstall:
-	-rm -f $(INSTALL_DIR)/libglv.so
-	-rm -f $(INSTALL_DIR)/libglv.so.$(VER_M)
-	-rm -f $(INSTALL_DIR)/libglv.so.$(VER_MM)
+	-rm -f $(LIB_DIR)/libglv.so
+	-rm -f $(LIB_DIR)/libglv.so.$(VER_M)
+	-rm -f $(LIB_DIR)/libglv.so.$(VER_MM)
 	-rm -f $(HEADER_DIR)/glv.h $(HEADER_DIR)/glv_keys.h
 
 
