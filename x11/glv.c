@@ -1,7 +1,7 @@
 /*===========================================================================/
 
   GLV Library for X11
-  Copyright (C) 2003-2006  Karl Robillard
+  Copyright (C) 2003-2006,2011  Karl Robillard
 
 /===========================================================================*/
 
@@ -938,12 +938,24 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
     glXMakeCurrent( disp, window, view->ctx );
 
 
-    // Generate GLV_EVENT_RESIZE
+    /* Generate GLV_EVENT_RESIZE
+     * The geometry is queried (rather than assuming the requested size is
+     * used) just to be safe.
+     */
     {
     GLViewEvent ve;
+    XEvent event;
     Window root;
     int x, y;
     unsigned int w, h, u;
+
+    /* Wait to be mapped or else the XCreateWindow size may be returned. */
+    while( 1 )
+    {
+        XWindowEvent( disp, window, StructureNotifyMask, &event );
+        if( event.type == MapNotify )
+            break;
+    }
 
     XGetGeometry( disp, window, &root, &x, &y, &w, &h, &u, &u );
     view->width  = w;
