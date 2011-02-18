@@ -944,26 +944,28 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
      */
     {
     GLViewEvent ve;
+    XWindowAttributes attr;
     XEvent event;
-    Window root;
-    int x, y;
-    unsigned int w, h, u;
 
-    /* Wait to be mapped or else the XCreateWindow size may be returned. */
-    while( 1 )
+    XGetWindowAttributes( disp, window, &attr );
+    if( attr.map_state != IsViewable )
     {
-        XWindowEvent( disp, window, StructureNotifyMask, &event );
-        if( event.type == MapNotify )
-            break;
+        /* Wait to be mapped or else the XCreateWindow size may be returned. */
+        while( 1 )
+        {
+            XWindowEvent( disp, window, StructureNotifyMask, &event );
+            if( event.type == MapNotify )
+                break;
+        }
+        XGetWindowAttributes( disp, window, &attr );
     }
 
-    XGetGeometry( disp, window, &root, &x, &y, &w, &h, &u, &u );
-    view->width  = w;
-    view->height = h;
+    view->width  = attr.width;
+    view->height = attr.height;
 
     ve.type = GLV_EVENT_RESIZE;
-    ve.x    = w;
-    ve.y    = h;
+    ve.x    = attr.width;
+    ve.y    = attr.height;
     view->eventHandler( view, &ve );
     }
 
