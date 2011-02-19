@@ -54,7 +54,6 @@ dist:
 	tar -C /tmp -cf $(ARCHIVE).tar $(ARCHIVE)
 	rm -rf /tmp/$(ARCHIVE)
 	gzip -9f $(ARCHIVE).tar
-	mv $(ARCHIVE).tar.gz $(ARCHIVE).tgz
 
 
 #EOF

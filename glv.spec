@@ -1,10 +1,10 @@
 Summary: A small, cross-platform display library for OpenGL
 Name: libglv0
-Version: 0.3
+Version: 0.3.1
 Release: 1
 License: MIT
 Group: Development/Libraries
-Source: http://outguard.sourceforge.net/arc/libglv-%{version}.tgz
+Source: libglv-%{version}.tar.gz
 Url: http://outguard.sourceforge.net/download.html
 Packager: Karl Robillard <wickedsmoke@users.sf.net>
 BuildRoot: %{_tmppath}/libglv-%{version}-build

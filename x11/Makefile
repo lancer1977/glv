@@ -6,7 +6,8 @@
 #------ Compiler and tools
 
 CC       = gcc
-LINK	 = ld
+# Using gcc instead of ld because it's broken on Ubuntu.
+LINK     = gcc
 LDCONFIG = /sbin/ldconfig
 INSTALL  = install
 
@@ -16,22 +17,24 @@ INSTALL  = install
 VER_M        = 0
 VER_MM       = 0.3
 GLV_TARGET   = libglv.so.$(VER_MM)
-GLV_CFLAGS   = -fPIC -Wall -W -Wno-unused-parameter -g
+GLV_CFLAGS   = -fPIC -Wall -W -Wno-unused-parameter -O3
 GLV_INCPATH  = -I.
 GLV_LFLAGS   = -shared
 GLV_LIBS     =
-GLV_OBJECTS  = 	glv.o
-LIB_DIR      = /usr/local/lib
-HEADER_DIR   = /usr/local/include/GL
+GLV_OBJECTS  = glv.o
+PREFIX       = /usr/local
+# DESTDIR used for staged installs.
+LIB_DIR      = $(DESTDIR)$(PREFIX)/lib
+HEADER_DIR   = $(DESTDIR)$(PREFIX)/include/GL
 
 
 GLV_CFLAGS  += -DUSE_XF86VMODE
 GLV_LIBS    += -lXxf86vm
-#GLV_LIBS    += -L/usr/X11R6/lib
-#GLV_LIBS    += -L/usr/X11R6/lib64
+# GLV_LIBS    += -L/usr/X11R6/lib
+# GLV_LIBS    += -L/usr/X11R6/lib64
 
-#GLV_CFLAGS += -DUSE_XME
-#GLV_LIBS   += -L/usr/X11R6/lib -lXxme
+# GLV_CFLAGS += -DUSE_XME
+# GLV_LIBS   += -L/usr/X11R6/lib -lXxme
 
 # GLV_LIBS    += -lXext -lX11
 
@@ -41,7 +44,7 @@ GLV_LIBS    += -lXxf86vm
 all: $(GLV_TARGET)
  
 $(GLV_TARGET): $(GLV_OBJECTS)
-	$(LINK) -o $@ -soname libglv.so.$(VER_M) $(GLV_LFLAGS) $(GLV_OBJECTS) $(GLV_LIBS)
+	$(LINK) -o $@ -Wl,-soname,libglv.so.$(VER_M) $(GLV_LFLAGS) $(GLV_OBJECTS) $(GLV_LIBS)
 	ln -sf libglv.so.$(VER_MM) libglv.so.$(VER_M)
 	ln -sf libglv.so.$(VER_MM) libglv.so
  
@@ -52,8 +55,10 @@ clean:
 .PHONY: install
 install:
 	mkdir -p $(HEADER_DIR)
+	mkdir -p $(LIB_DIR)
 	$(INSTALL) glv.h glv_keys.h $(HEADER_DIR)
 	$(INSTALL) $(GLV_TARGET) $(LIB_DIR)
+	ln -sf libglv.so.$(VER_MM) $(LIB_DIR)/libglv.so.$(VER_M)
 	ln -sf libglv.so.$(VER_MM) $(LIB_DIR)/libglv.so
 	$(LDCONFIG) -v -n $(LIB_DIR)
 
