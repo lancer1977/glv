@@ -112,7 +112,7 @@ static pascal OSStatus windowEventHandler( EventHandlerCallRef myHandler,
 
                 COPY_KEY( ve, GLV_EVENT_KEY_DOWN )
                 view->eventHandler( view, &ve );
-                printf( "KR key down %x %x\n", (int) code, (int) modifiers );
+                //printf( "KR key down %x %x\n", (int) code, (int) modifiers );
                 break;
 
             case kEventRawKeyUp:
@@ -296,7 +296,7 @@ static pascal OSStatus windowEventHandler( EventHandlerCallRef myHandler,
                 break;
 
             default:
-	            printf( "KR window event %u\n", (unsigned int) kind );
+	            //printf( "KR window event %u\n", (unsigned int) kind );
                 break;
             }
             break;
@@ -367,15 +367,16 @@ OSStatus buildGL( GLView* view )
     GLint attrib[] = { AGL_RGBA,
                        AGL_DOUBLEBUFFER,
                        AGL_DEPTH_SIZE, 16,
-#ifdef kUseMultiSample
                        AGL_SAMPLE_BUFFERS_ARB, 1,
-                       AGL_SAMPLES_ARB, kSamples, AGL_NO_RECOVERY,
-#endif
+                       AGL_SAMPLES_ARB, 4, AGL_NO_RECOVERY,
                        AGL_NONE };
 
-    ProcessSerialNumber psn = { 0, kCurrentProcess };
+    //ProcessSerialNumber psn = { 0, kCurrentProcess };
 
     // Build context.
+
+    if( ! (view->flags & GLV_ATTRIB_MULTISAMPLE) )
+        attrib[ 4 ] = AGL_NONE;
 
     view->ctx        = NULL;
     view->pixFormat  = aglChoosePixelFormat(NULL, 0, attrib);
