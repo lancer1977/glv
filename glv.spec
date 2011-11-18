@@ -33,15 +33,13 @@ make -C x11
 mkdir -p $RPM_BUILD_ROOT%{_libdir}
 mkdir -p $RPM_BUILD_ROOT%{_includedir}/GL
 install -m 644 x11/*.h $RPM_BUILD_ROOT%{_includedir}/GL
-install -m 644 x11/libglv.so.0.3 $RPM_BUILD_ROOT%{_libdir}
+install -m 755 x11/libglv.so.0.3 $RPM_BUILD_ROOT%{_libdir}
 ln -s libglv.so.0.3 $RPM_BUILD_ROOT%{_libdir}/libglv.so.0
 ln -s libglv.so.0.3 $RPM_BUILD_ROOT%{_libdir}/libglv.so
 
-%post
-/sbin/ldconfig
+%post -p /sbin/ldconfig
 
-%postun
-/sbin/ldconfig
+%postun -p /sbin/ldconfig
 
 %clean
 rm -rf $RPM_BUILD_ROOT

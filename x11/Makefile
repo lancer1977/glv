@@ -56,8 +56,8 @@ clean:
 install:
 	mkdir -p $(HEADER_DIR)
 	mkdir -p $(LIB_DIR)
-	$(INSTALL) glv.h glv_keys.h $(HEADER_DIR)
-	$(INSTALL) $(GLV_TARGET) $(LIB_DIR)
+	$(INSTALL) -m 644 glv.h glv_keys.h $(HEADER_DIR)
+	$(INSTALL) -m 755 $(GLV_TARGET) $(LIB_DIR)
 	ln -sf libglv.so.$(VER_MM) $(LIB_DIR)/libglv.so.$(VER_M)
 	ln -sf libglv.so.$(VER_MM) $(LIB_DIR)/libglv.so
 	$(LDCONFIG) -v -n $(LIB_DIR)
