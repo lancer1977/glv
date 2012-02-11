@@ -1,11 +1,10 @@
-REBOL []
-
-project "examples"
+project: "examples"
 
 default [
     debug
     warn
     opengl
+    objdir %obj
     win32 [
         include_from %../win32
         libs_from %../win32 {glv}
@@ -31,6 +30,10 @@ exe "window" [
 
 exe "complete" [
     sources [ %complete.c ]
+]
+
+exe "es2" [
+    sources [ %es2.c ]
 ]
 
 ;eof

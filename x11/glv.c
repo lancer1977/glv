@@ -1,7 +1,7 @@
 /*===========================================================================/
 
   GLV Library for X11
-  Copyright (C) 2003-2006,2011  Karl Robillard
+  Copyright (C) 2003-2006,2011,2012  Karl Robillard
 
 /===========================================================================*/
 
@@ -167,6 +167,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <glv.h>
+#include <GL/glxext.h>
 #include <X11/Xatom.h>
 
 #ifdef USE_XF86VMODE
@@ -178,7 +179,7 @@
 #endif
 
 
-#define FLAG_ATTRIB                 0x0007
+#define FLAG_ATTRIB                 0x000f
 #define FLAG_FULLSCREEN_MODE        0x0010
 #define FLAG_FILTER_REPEAT          0x0020
 
@@ -188,98 +189,55 @@
                          ExposureMask | StructureNotifyMask | \
                          PropertyChangeMask)
 
-
-static XVisualInfo* chooseVisual( Display* disp, int screen, int flags )
-{
-    int* end;
-    int attrib[] = {
-        GLX_RGBA,
-        GLX_RED_SIZE,   1,
-        GLX_GREEN_SIZE, 1,
-        GLX_BLUE_SIZE,  1,
-        GLX_DEPTH_SIZE, 1,
-        GLX_DOUBLEBUFFER,
-        GLX_STENCIL_SIZE, 1,
-        0, 1, 0, 16,
-        None
-    };
-
-
-    end = attrib + 9;
-
-    if( flags & GLV_ATTRIB_DOUBLEBUFFER )
-    {
-        *end++ = GLX_DOUBLEBUFFER;
-    }
-
-    if( flags & GLV_ATTRIB_STENCIL )
-    {
-        *end++ = GLX_STENCIL_SIZE;
-        *end++ = 1;
-    }
-
-    if( flags &  GLV_ATTRIB_MULTISAMPLE )
-    {
-#ifdef GL_ARB_multisample
-        XVisualInfo* vis;
-        int samples;
-
-
-        *end++ = GLX_SAMPLE_BUFFERS_ARB;
-        *end++ = 1;
-        *end++ = GLX_SAMPLES_ARB;
-        *end++ = 16;
-        *end   = None;
-
-        --end;
-
-        for( samples = 16; samples > 1; --samples )
-        {
-            *end = samples;
-
-            vis = glXChooseVisual( disp, screen, attrib );
-            if( vis )
-                return vis;
-        }
-#endif
-        return 0;
-    }
-
-    *end = None;
-    return glXChooseVisual( disp, screen, attrib );
-}
-
+#define FB_ATTR_SIZE    20
 
 /*
-  Sets flags to valid attributes.
+  Fill glXChooseFBConfig attribute array.
+
+  \param attr   Must be at least FB_ATTR_SIZE elements.
 */
-static XVisualInfo* bestVisual( Display* disp, int screen, int* flags )
+static void _setFBAttr( int* attr, int glvFlags )
 {
-    XVisualInfo* vi = chooseVisual( disp, screen, *flags );
-    if( ! vi )
+    // GLX_RENDER_TYPE   defaults to GLX_RGBA_BIT
+    // GLX_DRAWABLE_TYPE defaults to GLX_WINDOW_BIT
+
+    *attr++ = GLX_RED_SIZE;
+    *attr++ = 4;
+    *attr++ = GLX_GREEN_SIZE;
+    *attr++ = 4;
+    *attr++ = GLX_BLUE_SIZE;
+    *attr++ = 4;
+    *attr++ = GLX_ALPHA_SIZE;
+    *attr++ = 4;
+    *attr++ = GLX_DEPTH_SIZE;
+    *attr++ = 4;
+
+    if( glvFlags & GLV_ATTRIB_DOUBLEBUFFER )
     {
-        int valid = 0;
-        int bit = GLV_ATTRIB_MULTISAMPLE;
-
-        // Test each requested attribute separately.
-        while( bit )
-        {
-            if( *flags & bit )
-            {
-                vi = chooseVisual( disp, screen, bit );
-                if( vi )
-                {
-                    XFree( vi );
-                    valid |= bit;
-                }
-            }
-            bit >>= 1;
-        }
-
-        *flags = valid;
-        vi = chooseVisual( disp, screen, valid );
+        *attr++ = GLX_DOUBLEBUFFER;
+        *attr++ = True;
     }
-    return vi;
+
+    if( glvFlags & GLV_ATTRIB_STENCIL )
+    {
+        *attr++ = GLX_STENCIL_SIZE;
+        *attr++ = 1;
+    }
+
+    /*
+    We don't want to fail if multi-sampling is requested and it's not available.
+#ifdef GLX_ARB_multisample
+    if( glvFlags & GLV_ATTRIB_MULTISAMPLE )
+    {
+        *attr++ = GLX_SAMPLE_BUFFERS_ARB;
+        *attr++ = 1;
+        *attr++ = GLX_SAMPLES_ARB;
+        *attr++ = 2;
+    }
+#endif
+    */
+
+    *attr = None;
 }
 
 
@@ -307,8 +265,10 @@ GLView* glv_create( int attributes )
 {
     GLView* view;
     Display* disp;
-    XVisualInfo* vinfo;
-    int screen;
+    GLXFBConfig* fbCfg;
+    int ci = 0;
+    int fbCount;
+    int fbAttr[ FB_ATTR_SIZE ];
 
 
     disp = XOpenDisplay( 0 );
@@ -321,44 +281,124 @@ GLView* glv_create( int attributes )
     if( glXQueryExtension( disp, 0, 0 ) == 0 )
     {
         fprintf( stderr, "GLX Extension not available!\n" );
-        XCloseDisplay( disp );
-        return( 0 );
+        goto fail_disp;
     }
 
-    screen = DefaultScreen( disp );
-
-    attributes &= FLAG_ATTRIB;
-    vinfo = bestVisual( disp, screen, &attributes );
-    if( ! vinfo )
-    {
-        fprintf( stderr, "glXChooseVisual failed!\n" );
-        XCloseDisplay( disp );
-        return( 0 );
-    }
-
-    /* We have a valid visual so create view. */
     view = (GLView*) calloc( 1, sizeof(GLView) );
     if( ! view )
-    {
-        XCloseDisplay( disp );
-        return( 0 );
-    }
+        goto fail_disp;
 
     // Initialize non-zero members.
-    view->display    = disp;
-    view->screen     = screen;
-    view->vinfo      = vinfo;
-    view->flags      = attributes;
-    view->nullCursor = -1;
+    view->display      = disp;
+    view->screen       = DefaultScreen( disp );
+    view->flags        = attributes & FLAG_ATTRIB;
+    view->nullCursor   = -1;
     view->eventHandler = glv_nullHandler;
 
 
-    view->ctx = glXCreateContext( disp, view->vinfo, NULL, True );
+    _setFBAttr( fbAttr, attributes );
 
+    fbCfg = glXChooseFBConfig( disp, view->screen, fbAttr, &fbCount );
+    if( ! fbCfg )
+    {
+        fprintf( stderr, "glXChooseFBConfig failed!\n" );
+        goto fail_view;
+    }
+
+#ifdef GLX_ARB_multisample
+    if( attributes & GLV_ATTRIB_MULTISAMPLE )
+    {
+        // The config array should be sorted with the highest capability modes
+        // at the end, so we're looking for the first one with the largest
+        // GLX_SAMPLES_ARB.
+        int i;
+        int val;
+        int high = 0;
+        for( i = 0; i < fbCount; ++i )
+        {
+            glXGetFBConfigAttrib( disp, fbCfg[ i ], GLX_SAMPLES_ARB, &val );
+            if( high < val )
+            {
+                high = val;
+                ci = i;
+            }
+        }
+        //printf( "KR Selected config %d\n", ci );
+    }
+#endif
+
+#if 0
+    {
+    int i;
+    int r, g, b, a, d, s, samp;
+    printf( "%d FBConfigs\n"
+            "   R  G  B  A  Dep Sten Samp\n"
+            "  ----------------------------\n", fbCount );
+    for( i = 0; i < fbCount; ++i )
+    {
+        glXGetFBConfigAttrib( disp, fbCfg[ i ], GLX_RED_SIZE,     &r );
+        glXGetFBConfigAttrib( disp, fbCfg[ i ], GLX_GREEN_SIZE,   &g );
+        glXGetFBConfigAttrib( disp, fbCfg[ i ], GLX_BLUE_SIZE,    &b );
+        glXGetFBConfigAttrib( disp, fbCfg[ i ], GLX_ALPHA_SIZE,   &a );
+        glXGetFBConfigAttrib( disp, fbCfg[ i ], GLX_DEPTH_SIZE,   &d );
+        glXGetFBConfigAttrib( disp, fbCfg[ i ], GLX_STENCIL_SIZE, &s );
+        glXGetFBConfigAttrib( disp, fbCfg[ i ], GLX_SAMPLES_ARB,  &samp );
+        printf( "  %2d,%2d,%2d,%2d  %2d  %2d  %2d\n", r, g, b, a, d, s, samp );
+    }
+    }
+#endif
+
+    if( attributes & GLV_ATTRIB_ES2 )
+    {
+#if defined(GLX_VERSION_1_4) && defined(GLX_CONTEXT_ES2_PROFILE_BIT_EXT)
+        /* Requires "GLX_EXT_create_context_es2_profile" */
+        int ctxAttr[] =
+        {
+            GLX_CONTEXT_MAJOR_VERSION_ARB, 2,
+            GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+            GLX_CONTEXT_PROFILE_MASK_ARB,  GLX_CONTEXT_ES2_PROFILE_BIT_EXT,
+            None
+        };
+        PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB =
+            (PFNGLXCREATECONTEXTATTRIBSARBPROC)
+            glXGetProcAddress( (const GLubyte*) "glXCreateContextAttribsARB" );
+        if( ! glXCreateContextAttribsARB )
+        {
+            fprintf( stderr, "glXCreateContextAttribsARB is not present!\n" );
+            goto fail_fb;
+        }
+        view->ctx = glXCreateContextAttribsARB( disp, fbCfg[ci], NULL, True,
+                                                ctxAttr );
+        if( ! view->ctx )
+        {
+            fprintf( stderr, "Could not create ES2 profile GLXContext\n" );
+            goto fail_fb;
+        }
+#else
+        fprintf( stderr, "libglv not compiled with GLV_ATTRIB_ES2 support\n" );
+        goto fail_fb;
+#endif
+    }
+    else
+    {
+        view->ctx = glXCreateNewContext( disp, fbCfg[ci], GLX_RGBA_TYPE,
+                                         NULL, True );
+        if( ! view->ctx )
+        {
+            fprintf( stderr, "Could not create GLXContext\n" );
+            goto fail_fb;
+        }
+    }
 
     {
         XSetWindowAttributes attr;
-        XVisualInfo* vi = view->vinfo;
+        XVisualInfo* vi = glXGetVisualFromFBConfig( disp, fbCfg[ci] );
+        if( ! vi )
+        {
+            fprintf( stderr, "glXGetVisualFromFBConfig failed!\n" );
+            glXDestroyContext( disp, view->ctx );
+            goto fail_fb;
+        }
 
         /* GLX requires a colormap (see the glXIntro man page). */
 
@@ -369,19 +409,29 @@ GLView* glv_create( int attributes )
                                          vi->visual, AllocNone );
 
         view->window = XCreateWindow( disp, RootWindow( disp, vi->screen ),
-                                      0, 0, 640, 480,
+                                      0, 0, 256, 256,
                                       0, vi->depth, InputOutput, vi->visual,
                                       CWEventMask | CWBorderPixel | CWColormap,
                                       &attr );
+        XFree( vi );
     }
+
+    XFree( fbCfg );
 
     /* Enable the delete window protocol. */
     view->deleteAtom = XInternAtom( disp, "WM_DELETE_WINDOW", False );
     XSetWMProtocols( disp, view->window, &view->deleteAtom, 1 );
 
     glv_makeCurrent( view );
-
     return( view );
+
+fail_fb:
+    XFree( fbCfg );
+fail_view:
+    free( view );
+fail_disp:
+    XCloseDisplay( disp );
+    return( 0 );
 }
 
 
@@ -449,12 +499,6 @@ void glv_destroy( GLView* view )
         {
             glXDestroyContext( disp, view->ctx );
             view->ctx = 0;
-        }
-
-        if( view->vinfo )
-        {
-            XFree( view->vinfo );
-            view->vinfo = 0;
         }
 
         XCloseDisplay( view->display );

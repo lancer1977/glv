@@ -3,7 +3,7 @@
 /*===========================================================================/
 
   GLV Library for X11
-  Copyright (C) 2003-2006  Karl Robillard
+  Copyright (C) 2003-2006,2012  Karl Robillard
 
 /===========================================================================*/
 
@@ -37,7 +37,6 @@ typedef struct {
     Display* display;
     int screen;
     Window window;
-    XVisualInfo* vinfo;
     GLXContext ctx;
 
 
@@ -67,6 +66,7 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_ATTRIB_DOUBLEBUFFER     1
 #define GLV_ATTRIB_STENCIL          2
 #define GLV_ATTRIB_MULTISAMPLE      4
+#define GLV_ATTRIB_ES2              8
 
 #define GLV_MODEID_WINDOW   -1
 
