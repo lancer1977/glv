@@ -9,7 +9,7 @@ Url: http://outguard.sourceforge.net/download.html
 Packager: Karl Robillard <wickedsmoke@users.sf.net>
 BuildRoot: %{_tmppath}/libglv-%{version}-build
 Prefix: /usr/local
-%if 0%{?fedora_version}
+%if 0%{?fedora_version} || 0%{?rhel_version} || 0%{?centos_version}
 BuildRequires: mesa-libGL-devel libXxf86vm-devel
 %endif
 %if 0%{?mandriva_version}
