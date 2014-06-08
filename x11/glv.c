@@ -1,7 +1,7 @@
 /*===========================================================================/
 
   GLV Library for X11
-  Copyright (C) 2003-2006,2011,2012  Karl Robillard
+  Copyright (C) 2003-2006,2011,2012,2014  Karl Robillard
 
 /===========================================================================*/
 
@@ -169,6 +169,7 @@
 #include <glv.h>
 #include <GL/glxext.h>
 #include <X11/Xatom.h>
+#include <X11/XKBlib.h>
 
 #ifdef USE_XF86VMODE
 #include <X11/extensions/xf86vmode.h>
@@ -497,6 +498,7 @@ void glv_destroy( GLView* view )
 
         if( view->ctx )
         {
+            glXMakeCurrent( disp, None, NULL );     // Release context.
             glXDestroyContext( disp, view->ctx );
             view->ctx = 0;
         }
@@ -1184,8 +1186,10 @@ static XKeyEvent* glv_keyEvent;
 /*
   Note that the KeySym returned from XLookupString takes into account the
   Shift key whereas XKeycodeToKeysym does not.
+
+  Now using XkbKeycodeToKeysym since XKeycodeToKeysym is deprecated.
 */
-#define KEYSYM(e)   XKeycodeToKeysym( view->display, e.xkey.keycode, 0 )
+#define KEYSYM(e)   XkbKeycodeToKeysym( view->display, e.xkey.keycode, 0, 0 )
 
 
 #define COPY_KEY(ve,xe,t) \
