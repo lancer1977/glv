@@ -3,7 +3,7 @@
 /*===========================================================================/
 
   GLV Library for Windows
-  Copyright (C) 2003-2007  Karl Robillard
+  Copyright (C) 2003-2007,2015  Karl Robillard
 
 /===========================================================================*/
 
@@ -130,6 +130,9 @@ extern void glv_waitEvent( GLView* view );
 extern void glv_handleEvents( GLView* view );
 extern void glv_filterRepeatKeys( GLView* view, int on );
 extern int  glv_ascii();
+extern int  glv_clipboardText( GLView* view,
+                       void (*func)(const char* data, int len, void* user),
+                       void* user );
 
 
 #ifdef __cplusplus
