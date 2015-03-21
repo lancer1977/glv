@@ -281,7 +281,7 @@ static void _destroyWindow( GLView* view )
     wglDeleteContext( view->rc );
     ReleaseDC( view->wnd, view->dc );
 
-    // WndProc gets called insided DestroyWindow.
+    // NOTE: WndProc gets called inside DestroyWindow.
     _cv = 0;
     DestroyWindow( view->wnd );
     view->wnd = 0;
