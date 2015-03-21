@@ -19,7 +19,11 @@
 
 static GLView* _cv = 0;
 
-static void glv_nullHandler( void* v, GLViewEvent* e ) {}
+static void glv_nullHandler( void* v, GLViewEvent* e )
+{
+    (void) v;
+    (void) e;
+}
 
 
 /*--------------------------------------------------------------------------*/
@@ -28,62 +32,6 @@ static void glv_nullHandler( void* v, GLViewEvent* e ) {}
 HINSTANCE hInstance;
 static WPARAM _keyWParam;
 static LPARAM _keyLParam;
-
-extern int main( int, char** );
-
-
-/*
-  This WinMain just gets us to a normal main().
-*/
-int WINAPI WinMain( HINSTANCE hi, HINSTANCE hPrevInstance,
-                    LPSTR lpCmdLine, int nCmdShow )
-{
-#define MAX_NUM_ARGVS    20
-    int argc;
-    char* argv[ MAX_NUM_ARGVS ];
-
-    /* previous instances do not exist in Win32 */
-    if( hPrevInstance )
-        return 0;
-
-    hInstance = hi;
-
-#if 1
-    /* This allows us to see printf() by piping output to 'more' in a command
-     * prompt.  When using Cygwin rxvt this gives us normal UNIX behavior
-     * (woohoo!).
-     */
-    setbuf( stdout, NULL );
-#endif
-
-    argc = 1;
-    argv[0] = "prog_name";
-
-    while( *lpCmdLine && (argc < MAX_NUM_ARGVS) )
-    {
-        while( *lpCmdLine && ((*lpCmdLine <= 32) || (*lpCmdLine > 126)) )
-            lpCmdLine++;
-
-        if( *lpCmdLine )
-        {
-            argv[ argc ] = lpCmdLine;
-            argc++;
-
-            while( *lpCmdLine && ((*lpCmdLine > 32) && (*lpCmdLine <= 126)) )
-                lpCmdLine++;
-
-            if( *lpCmdLine )
-            {
-                *lpCmdLine = 0;
-                lpCmdLine++;
-            }
-
-        }
-    }
-
-    return main( argc, argv );
-}
-
 
 #define COPY_KEY(ve,t) \
     _keyLParam = lParam; \
@@ -102,6 +50,10 @@ LRESULT CALLBACK
 WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
 {
     GLViewEvent ve;
+
+    //printf( "WndProc %d %p\n", message, _cv );
+    if( ! _cv )
+        return DefWindowProc( hWnd, message, wParam, lParam );
 
     switch( message )
     {
@@ -329,6 +281,8 @@ static void _destroyWindow( GLView* view )
     wglDeleteContext( view->rc );
     ReleaseDC( view->wnd, view->dc );
 
+    // WndProc gets called insided DestroyWindow.
+    _cv = 0;
     DestroyWindow( view->wnd );
     view->wnd = 0;
 }
@@ -376,6 +330,18 @@ GLView* glv_create( int attributes )
     _createWindow( view, 0, attributes );
     view->flags = attributes;
 
+#ifdef GLEW_VERSION
+    {
+    GLenum err = glewInit();
+    if( GLEW_OK != err )
+    {
+        fprintf(stderr, "GLV: %s\n", glewGetErrorString(err));
+        _destroyWindow( view );
+        view = 0;
+    }
+    }
+#endif
+
     _cv = view;
 
     return( view );
@@ -404,9 +370,7 @@ void glv_destroy( GLView* view )
         if( view->wnd )
         {
             _restoreVideo( view );
-
             _destroyWindow( view );
-
             UnregisterClass( className, hInstance );
         }
 
@@ -612,6 +576,7 @@ void glv_iconify( GLView* view )
 */
 void glv_showCursor( GLView* view, int on )
 {
+    (void) view;
     ShowCursor( on ? TRUE : FALSE );
 }
 
@@ -633,6 +598,7 @@ void glv_setEventHandler( GLView* view, GLViewEvent_f func )
 void glv_waitEvent( GLView* view )
 {
     // TODO
+    (void) view;
 }
 
 
@@ -705,6 +671,7 @@ int glv_clipboardText( GLView* view,
                        void* user )
 {
     LPTSTR clip;
+    (void) view;
    
     if( ! IsClipboardFormatAvailable(CF_TEXT) )
         return 0;
