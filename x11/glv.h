@@ -112,6 +112,7 @@ extern int  glv_queryModes( GLViewMode_f func, void* );
 extern GLView* glv_create( int attributes );
 extern void glv_destroy( GLView* view );
 extern int  glv_attributes( GLView* view );
+extern int  glv_dpi( GLView* view );
 extern int  glv_changeMode( GLView* view, const GLViewMode* mode );
 extern void glv_swapBuffers( GLView* view );
 extern void glv_makeCurrent( GLView* view );

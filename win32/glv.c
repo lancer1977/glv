@@ -326,6 +326,11 @@ GLView* glv_create( int attributes )
 
     RegisterClass( &wc );
 
+#if 0
+    // Required to query LOGPIXELSY.
+    SetProcessDPIAware();   // Windows Vista
+    //SetProcessDpiAwareness( PROCESS_SYSTEM_DPI_AWARE ); // Windows 8.1
+#endif
 
     _createWindow( view, 0, attributes );
     view->flags = attributes;
@@ -385,6 +390,22 @@ void glv_destroy( GLView* view )
 int glv_attributes( GLView* view )
 {
     return view->flags & FLAG_ATTRIB;
+}
+
+
+/**
+  Returns vertical dots per inch of display.
+*/
+int glv_dpi( GLView* view )
+{
+#if 1
+    double vr = ((double) GetDeviceCaps(view->dc, VERTRES) * 25.4) /
+                 (double) GetDeviceCaps(view->dc, VERTSIZE);
+    return (int) (vr + 0.5);
+#else
+    // Must cancel DPI scaling or the default value of 96 is returned.
+    return GetDeviceCaps( view->dc, LOGPIXELSY );
+#endif
 }
 
 

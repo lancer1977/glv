@@ -520,6 +520,19 @@ int glv_attributes( GLView* view )
 }
 
 
+/**
+  Returns vertical dots per inch of display.
+*/
+int glv_dpi( GLView* view )
+{
+    Display* d = view->display;
+    int s = view->screen;
+    double vr = ((double) DisplayHeight(d, s) * 25.4) /
+                 (double) DisplayHeightMM(d, s);
+    return (int) (vr + 0.5);
+}
+
+
 /* Approximate vertical refresh rate (Hz) */
 #define VRATE(mi) \
     ((int) (((mi)->dotclock * 1000.0) / ((mi)->htotal * (mi)->vtotal) + 0.5))
