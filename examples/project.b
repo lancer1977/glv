@@ -37,4 +37,5 @@ exe "es2" [
     sources [ %es2.c ]
 ]
 
+exe "part" [ sources [ %part.c ] ]
 ;eof

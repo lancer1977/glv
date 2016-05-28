@@ -16,9 +16,10 @@ INSTALL  = install
 
 VER_M        = 0
 VER_MM       = 0.3
-GLV_SO       = libglv.so
+GLV_SO       = libglv-vk.so
 GLV_TARGET   = $(GLV_SO).$(VER_MM)
-GLV_CFLAGS   = -fPIC -Wall -W -Wno-unused-parameter -O3
+#GLV_CFLAGS   = -fPIC -Wall -W -Wno-unused-parameter -O3 -DNDEBUG
+GLV_CFLAGS   = -fPIC -Wall -W -Wno-unused-parameter -g -DDEBUG
 GLV_INCPATH  = -I.
 GLV_LFLAGS   = -shared
 GLV_LIBS     =
@@ -29,6 +30,11 @@ LIB_DIR      = $(DESTDIR)$(PREFIX)/lib
 HEADER_DIR   = $(DESTDIR)$(PREFIX)/include/GL
 
 
+ifndef VULKAN_SDK
+$(error VULKAN_SDK is not set)
+endif
+
+GLV_CFLAGS  += -DVK_USE_PLATFORM_XLIB_KHR -I$(VULKAN_SDK)/include
 GLV_CFLAGS  += -DUSE_XF86VMODE
 GLV_LIBS    += -lXxf86vm
 # GLV_LIBS    += -L/usr/X11R6/lib
@@ -37,7 +43,7 @@ GLV_LIBS    += -lXxf86vm
 # GLV_CFLAGS += -DUSE_XME
 # GLV_LIBS   += -L/usr/X11R6/lib -lXxme
 
-# GLV_LIBS    += -lXext -lX11
+GLV_LIBS    += -lXext -lX11
 
 
 #------ Build rules

@@ -1,7 +1,7 @@
 /*===========================================================================/
 
   GLV Library for X11
-  Copyright (C) 2003-2006,2011,2012,2014  Karl Robillard
+  Copyright (C) 2003-2006,2011,2012,2014,2016  Karl Robillard
 
 /===========================================================================*/
 
@@ -167,7 +167,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <glv.h>
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+#include <X11/Xutil.h>
+#else
 #include <GL/glxext.h>
+#endif
 #include <X11/Xatom.h>
 #include <X11/XKBlib.h>
 
@@ -180,15 +184,367 @@
 #endif
 
 
-#define FLAG_ATTRIB                 0x000f
-#define FLAG_FULLSCREEN_MODE        0x0010
-#define FLAG_FILTER_REPEAT          0x0020
+#define FLAG_ATTRIB_MASK            0x001f
+#define FLAG_FULLSCREEN_MODE        0x0100
+#define FLAG_FILTER_REPEAT          0x0200
 
 #define DEFAULT_INPUT   (KeyPressMask | KeyReleaseMask | \
                          ButtonPressMask | ButtonReleaseMask | \
                          PointerMotionMask | \
                          ExposureMask | StructureNotifyMask | \
                          PropertyChangeMask)
+
+
+static void glv_nullHandler( void* v, GLViewEvent* e )
+{
+    (void) v;
+    (void) e;
+}
+
+
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+#include <string.h>
+
+static int _findInstanceExtensions( const char** names )
+{
+    VkExtensionProperties* prop;
+    VkResult err;
+    const char** np;
+    uint32_t found = 1;
+    uint32_t count;
+    uint32_t i;
+
+#define EXT_NOT_FOUND   "Vulkan extension %s not found\n"
+
+
+    err = vkEnumerateInstanceExtensionProperties( NULL, &count, NULL );
+    if( err != VK_SUCCESS || count < 1 )
+        goto not_found;
+
+    prop = malloc( sizeof(VkExtensionProperties) * count );
+    if( ! prop )
+        return 0;
+    err = vkEnumerateInstanceExtensionProperties( NULL, &count, prop );
+    if( err != VK_SUCCESS )
+    {
+        free( prop );
+        goto not_found;
+    }
+    for( np = names; *np; ++np )
+    {
+        for( i = 0; i < count; ++i )
+        {
+            if( ! strcmp( *np, prop[i].extensionName ) )
+                break;
+        }
+        if( i == count )
+        {
+            fprintf( stderr, EXT_NOT_FOUND, *np );
+            found = 0;
+            break;
+        }
+    }
+    free( prop );
+    return found;
+
+not_found:
+    fprintf( stderr, EXT_NOT_FOUND, "properties" );
+    return 0;
+}
+
+
+static void glv_vkError( const char* name, int err )
+{
+    fprintf( stderr, "Vulkan %s failed (%d)\n", name, err );
+}
+
+
+static PFN_vkVoidFunction glv_vkInstanceProc( GLView* view, const char* name )
+{
+    PFN_vkVoidFunction func = vkGetInstanceProcAddr( view->inst, name );
+    if( ! func )
+        fprintf( stderr, "Vulkan function not found: %s\n", name );
+    return func;
+}
+
+
+/**
+  Create Vulkan device with a graphics/present queue.
+  Should only be called once.
+
+  \return Non-zero if successful.
+*/
+int glv_createVkDevice( GLView* view )
+{
+    VkDeviceQueueCreateInfo qc;
+    VkDeviceCreateInfo dc;
+#define FEATURES
+#ifdef FEATURES
+    VkPhysicalDeviceFeatures df;
+#endif
+    VkBool32 present;
+    const char* extNames[2];
+    float queuePriorities[1] = { 0.0 };
+    uint32_t i;
+    uint32_t count = view->queuePropCount;
+    VkResult err;
+    PFN_vkGetPhysicalDeviceSurfaceSupportKHR supportFunc;
+    static const char* layerNames[] = {
+        "VK_LAYER_LUNARG_standard_validation"
+    };
+
+
+    if( view->device != VK_NULL_HANDLE )
+        return 0;
+
+    // NOTE: Functions are not found unless extension is enabled in
+    //       VkInstanceCreateInfo.
+    supportFunc = (PFN_vkGetPhysicalDeviceSurfaceSupportKHR)
+          glv_vkInstanceProc( view, "vkGetPhysicalDeviceSurfaceSupportKHR" );
+    if( ! supportFunc )
+        return 0;
+
+    // Find a queue that supports graphics and can be presented.
+    for( i = 0; i < count; ++i )
+    {
+        if( view->queueProp[ i ].queueFlags & VK_QUEUE_GRAPHICS_BIT )
+        {
+            err = supportFunc( view->gpu, i, view->surface, &present );
+            if( err == VK_SUCCESS && present == VK_TRUE )
+                break;
+        }
+    }
+    if( i == count )
+    {
+        fprintf( stderr, "Vulkan graphics/present queue not found\n" );
+        return 0;
+    }
+
+    qc.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    qc.pNext = NULL;
+    qc.flags = 0;
+    qc.queueFamilyIndex = i;
+    qc.queueCount = 1;
+    qc.pQueuePriorities = queuePriorities;
+
+    extNames[0] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+    //extNames[1] = VK_NV_GLSL_SHADER_EXTENSION_NAME;
+
+#ifdef FEATURES
+    memset( &df, 0, sizeof(df) );
+    //if( gpu_features.shaderClipDistance )
+        df.shaderClipDistance = VK_TRUE;
+#endif
+
+    dc.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    dc.pNext = NULL;
+    dc.queueCreateInfoCount = 1;
+    dc.pQueueCreateInfos = &qc;
+    if( glv_attributes(view) & GLV_ATTRIB_DEBUG )
+    {
+        dc.enabledLayerCount = 1;
+        dc.ppEnabledLayerNames = layerNames;
+    }
+    else
+    {
+        dc.enabledLayerCount = 0;
+        dc.ppEnabledLayerNames = NULL;
+    }
+    dc.enabledExtensionCount = 1;
+    dc.ppEnabledExtensionNames = extNames;
+#ifdef FEATURES
+    dc.pEnabledFeatures = &df;
+#else
+    dc.pEnabledFeatures = NULL;
+#endif
+
+    err = vkCreateDevice( view->gpu, &dc, NULL, &view->device );
+    if( err != VK_SUCCESS )
+    {
+        glv_vkError( "vkCreateDevice", err );
+        return 0;
+    }
+
+    vkGetDeviceQueue( view->device, i, 0, &view->queue );
+    view->queueFamily = i;
+    return 1;
+}
+
+
+// Return non-zero if successful.
+int glv_createVulkan( GLView* view, int attributes )
+{
+    const char* iext[4];
+    VkInstanceCreateInfo ic;
+    VkXlibSurfaceCreateInfoKHR sc;
+    Display* disp = view->display;
+    VkResult err;
+    uint32_t extCount;
+
+    static const char* validationLayers[] = {
+        "VK_LAYER_GOOGLE_threading",
+        "VK_LAYER_LUNARG_parameter_validation",
+        "VK_LAYER_LUNARG_device_limits",
+        "VK_LAYER_LUNARG_object_tracker",
+        "VK_LAYER_LUNARG_image",
+        "VK_LAYER_LUNARG_core_validation",
+        "VK_LAYER_LUNARG_swapchain",
+        "VK_LAYER_GOOGLE_unique_objects"
+    };
+
+    /*
+    static const VkApplicationInfo app = {
+        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .pNext = NULL,
+        .pApplicationName = "<app name>",
+        .applicationVersion = 0,
+        .pEngineName = "glv",
+        .engineVersion = 0,
+        .apiVersion = VK_API_VERSION_1_0
+    };
+    */
+
+    view->inst   = VK_NULL_HANDLE;
+    view->gpu    = VK_NULL_HANDLE;
+    view->device = VK_NULL_HANDLE;
+    view->queue  = VK_NULL_HANDLE;
+
+    // Instance ------------------------------------------------
+
+    iext[0] = VK_KHR_SURFACE_EXTENSION_NAME;
+    iext[1] = VK_KHR_XLIB_SURFACE_EXTENSION_NAME;
+    extCount = 2;
+    if( attributes & GLV_ATTRIB_DEBUG )
+    {
+        iext[ extCount++ ] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
+    }
+    iext[ extCount ] = 0;
+    if( ! _findInstanceExtensions( iext ) )
+        return 0;
+
+    ic.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    ic.pNext = NULL;
+    ic.flags = 0;
+    ic.pApplicationInfo = NULL; //&app,
+    if( attributes & GLV_ATTRIB_DEBUG )
+    {
+        ic.enabledLayerCount = 8;
+        ic.ppEnabledLayerNames = validationLayers;
+    }
+    else
+    {
+        ic.enabledLayerCount = 0;
+        ic.ppEnabledLayerNames = NULL;
+    }
+    ic.enabledExtensionCount = extCount;
+    ic.ppEnabledExtensionNames = iext;
+
+    err = vkCreateInstance( &ic, NULL, &view->inst );
+    if( err != VK_SUCCESS )
+    {
+        glv_vkError( "vkCreateInstance", err );
+        return 0;
+    }
+
+    // Physical Device -----------------------------------------
+
+    {
+#define MAX_DEV 4
+    VkPhysicalDevice pdev[ MAX_DEV ];
+    VkPhysicalDevice gpu;
+    uint32_t pdevCount = MAX_DEV;
+    uint32_t qcount;
+
+    err = vkEnumeratePhysicalDevices( view->inst, &pdevCount, pdev );
+    if( err != VK_SUCCESS )
+    {
+        glv_vkError( "vkEnumeratePhysicalDevices", err );
+        goto fail_inst;
+    }
+    if( pdevCount > 1 )
+        printf( "Vulkan Physical Devices: %d\n", pdevCount );
+    view->gpu = gpu = pdev[0];
+
+#if 0
+    if( ! _findDeviceExtensions( gpu ) )    // VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        goto fail_qprop;
+#endif
+
+    vkGetPhysicalDeviceQueueFamilyProperties( gpu, &qcount, NULL );
+    if( ! qcount )
+    {
+        fprintf( stderr, "Vulkan has no queue properites\n" );
+        goto fail_inst;
+    }
+    view->queueProp = (VkQueueFamilyProperties*)
+                        malloc( qcount * sizeof(VkQueueFamilyProperties) );
+    view->queuePropCount = qcount;
+    vkGetPhysicalDeviceQueueFamilyProperties( gpu, &qcount,
+                                              view->queueProp );
+    }
+
+    // X11 Window ----------------------------------------------
+
+    {
+        XSetWindowAttributes attr;
+        XVisualInfo vtemp;
+        XVisualInfo* vi;
+        int viCount;
+
+        vtemp.screen = view->screen;
+        vi = XGetVisualInfo( disp, VisualScreenMask, &vtemp, &viCount );
+        if( ! vi )
+        {
+            fprintf( stderr, "XGetVisualInfo failed!\n" );
+            goto fail_qprop;
+        }
+
+        attr.event_mask   = DEFAULT_INPUT;
+        attr.border_pixel = BlackPixel( disp, vi->screen );
+        attr.colormap = XCreateColormap( disp,
+                                         RootWindow( disp, vi->screen ),
+                                         vi->visual, AllocNone );
+
+        view->window = XCreateWindow( disp, RootWindow( disp, vi->screen ),
+                                      0, 0, 256, 256,
+                                      0, vi->depth, InputOutput, vi->visual,
+                                      CWEventMask | CWBorderPixel | CWColormap,
+                                      &attr );
+        XFree( vi );
+    }
+
+    // Surface -------------------------------------------------
+
+    sc.sType  = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+    sc.pNext  = NULL;
+    sc.flags  = 0;
+    sc.dpy    = disp;
+    sc.window = view->window;
+
+    err = vkCreateXlibSurfaceKHR( view->inst, &sc, NULL, &view->surface );
+    if( err != VK_SUCCESS )
+    {
+        glv_vkError( "vkCreateXlibSurfaceKHR", err );
+        goto fail_win;
+    }
+
+    // Device --------------------------------------------------
+
+    if( ! glv_createVkDevice( view ) )  // Should probably have user do this.
+        goto fail_win;
+    return 1;
+
+fail_win:
+    XDestroyWindow( disp, view->window );
+    view->window = 0;
+fail_qprop:
+    free( view->queueProp );
+fail_inst:
+    vkDestroyInstance( view->inst, NULL );
+    return 0;
+}
+
+#else
 
 #define FB_ATTR_SIZE    20
 
@@ -242,60 +598,22 @@ static void _setFBAttr( int* attr, int glvFlags )
 }
 
 
-static void glv_nullHandler( void* v, GLViewEvent* e )
+// Return non-zero if successful.
+int glv_createGL( GLView* view, int attributes )
 {
-    (void) v;
-    (void) e;
-}
-
-
-/**
-  Creates a view.
-  Returns a GLView pointer or zero if the view could not be created.
-
-  If glv_create fails then no other GLV function should be called
-  (though it is safe to call glv_destroy()).
-
-  The possible attributes are GLV_ATTRIB_DOUBLEBUFFER, GLV_ATTRIB_STENCIL,
-  and GLV_ATTRIB_MULTISAMPLE.  Only RGBA visuals will be created.
-
-  A valid view may be returned even if all attributes could not be set.
-  Use glv_attributes() to check which are set.
-*/
-GLView* glv_create( int attributes )
-{
-    GLView* view;
-    Display* disp;
     GLXFBConfig* fbCfg;
-    int ci = 0;
-    int fbCount;
     int fbAttr[ FB_ATTR_SIZE ];
+    int fbCount;
+    int ci = 0;
+    int ok = 0;
+    Display* disp = view->display;
 
-
-    disp = XOpenDisplay( 0 );
-    if( ! disp )
-    {
-        fprintf( stderr, "XOpenDisplay failed!\n" );
-        return( 0 );
-    }
 
     if( glXQueryExtension( disp, 0, 0 ) == 0 )
     {
         fprintf( stderr, "GLX Extension not available!\n" );
-        goto fail_disp;
+        return 0;
     }
-
-    view = (GLView*) calloc( 1, sizeof(GLView) );
-    if( ! view )
-        goto fail_disp;
-
-    // Initialize non-zero members.
-    view->display      = disp;
-    view->screen       = DefaultScreen( disp );
-    view->flags        = attributes & FLAG_ATTRIB;
-    view->nullCursor   = -1;
-    view->eventHandler = glv_nullHandler;
-
 
     _setFBAttr( fbAttr, attributes );
 
@@ -303,7 +621,7 @@ GLView* glv_create( int attributes )
     if( ! fbCfg )
     {
         fprintf( stderr, "glXChooseFBConfig failed!\n" );
-        goto fail_view;
+        return 0;
     }
 
 #ifdef GLX_ARB_multisample
@@ -416,8 +734,59 @@ GLView* glv_create( int attributes )
                                       &attr );
         XFree( vi );
     }
+    ok = 1;
 
+fail_fb:
     XFree( fbCfg );
+    return ok;
+}
+#endif
+
+
+/**
+  Creates a view.
+  Returns a GLView pointer or zero if the view could not be created.
+
+  If glv_create fails then no other GLV function should be called
+  (though it is safe to call glv_destroy()).
+
+  The possible attributes are GLV_ATTRIB_DOUBLEBUFFER, GLV_ATTRIB_STENCIL,
+  and GLV_ATTRIB_MULTISAMPLE.  Only RGBA visuals will be created.
+
+  A valid view may be returned even if all attributes could not be set.
+  Use glv_attributes() to check which are set.
+*/
+GLView* glv_create( int attributes )
+{
+    GLView* view;
+    Display* disp;
+
+
+    disp = XOpenDisplay( 0 );
+    if( ! disp )
+    {
+        fprintf( stderr, "XOpenDisplay failed!\n" );
+        return( 0 );
+    }
+
+    view = (GLView*) calloc( 1, sizeof(GLView) );
+    if( ! view )
+        goto fail_disp;
+
+    // Initialize non-zero members.
+    view->display      = disp;
+    view->screen       = DefaultScreen( disp );
+    view->flags        = attributes & FLAG_ATTRIB_MASK;
+    view->nullCursor   = -1;
+    view->eventHandler = glv_nullHandler;
+
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+    if( ! glv_createVulkan( view, attributes ) )
+        goto fail;
+#else
+    if( ! glv_createGL( view, attributes ) )
+        goto fail;
+#endif
 
     /* Enable the delete window protocol. */
     view->deleteAtom = XInternAtom( disp, "WM_DELETE_WINDOW", False );
@@ -426,9 +795,7 @@ GLView* glv_create( int attributes )
     glv_makeCurrent( view );
     return( view );
 
-fail_fb:
-    XFree( fbCfg );
-fail_view:
+fail:
     free( view );
 fail_disp:
     XCloseDisplay( disp );
@@ -496,12 +863,19 @@ void glv_destroy( GLView* view )
             view->window = 0;
         }
 
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+        free( view->queueProp );
+        vkDestroyDevice( view->device, NULL );
+        vkDestroySurfaceKHR( view->inst, view->surface, NULL );
+        vkDestroyInstance( view->inst, NULL );
+#else
         if( view->ctx )
         {
             glXMakeCurrent( disp, None, NULL );     // Release context.
             glXDestroyContext( disp, view->ctx );
             view->ctx = 0;
         }
+#endif
 
         XCloseDisplay( view->display );
         view->display = 0;
@@ -516,7 +890,7 @@ void glv_destroy( GLView* view )
 */
 int glv_attributes( GLView* view )
 {
-    return view->flags & FLAG_ATTRIB;
+    return view->flags & FLAG_ATTRIB_MASK;
 }
 
 
@@ -994,7 +1368,9 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
 
 
     XSync( disp, True );
+#ifndef VK_USE_PLATFORM_XLIB_KHR
     glXMakeCurrent( disp, window, view->ctx );
+#endif
 
 
     /* Generate GLV_EVENT_RESIZE
@@ -1039,7 +1415,11 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
 */
 void glv_swapBuffers( GLView* view )
 {
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+    vkDeviceWaitIdle( view->device );
+#else
     glXSwapBuffers( view->display, view->window );
+#endif
 }
 
 
@@ -1048,7 +1428,10 @@ void glv_swapBuffers( GLView* view )
 */
 void glv_makeCurrent( GLView* view )
 {
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+#else
     glXMakeCurrent( view->display, view->window, view->ctx );
+#endif
 }
 
 

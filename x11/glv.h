@@ -3,12 +3,16 @@
 /*===========================================================================/
 
   GLV Library for X11
-  Copyright (C) 2003-2006,2012  Karl Robillard
+  Copyright (C) 2003-2006,2012,2016  Karl Robillard
 
 /===========================================================================*/
 
 
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+#include <vulkan/vulkan.h>
+#else
 #include <GL/glx.h>
+#endif
 
 
 typedef struct {
@@ -37,7 +41,18 @@ typedef struct {
     Display* display;
     int screen;
     Window window;
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+    VkInstance inst;
+    VkPhysicalDevice gpu;
+    VkDevice device;
+    VkSurfaceKHR surface;
+    VkQueue queue;
+    VkQueueFamilyProperties* queueProp;
+    int queuePropCount;
+    int queueFamily;
+#else
     GLXContext ctx;
+#endif
 
 
     /* Private */
@@ -67,6 +82,7 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_ATTRIB_STENCIL          2
 #define GLV_ATTRIB_MULTISAMPLE      4
 #define GLV_ATTRIB_ES2              8
+#define GLV_ATTRIB_DEBUG            16
 
 #define GLV_MODEID_WINDOW   -1
 
