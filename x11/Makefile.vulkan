@@ -30,11 +30,10 @@ LIB_DIR      = $(DESTDIR)$(PREFIX)/lib
 HEADER_DIR   = $(DESTDIR)$(PREFIX)/include/GL
 
 
-ifndef VULKAN_SDK
-$(error VULKAN_SDK is not set)
+GLV_CFLAGS  += -DVK_USE_PLATFORM_XLIB_KHR
+ifdef VULKAN_SDK
+GLV_CFLAGS  += -I$(VULKAN_SDK)/include
 endif
-
-GLV_CFLAGS  += -DVK_USE_PLATFORM_XLIB_KHR -I$(VULKAN_SDK)/include
 GLV_CFLAGS  += -DUSE_XF86VMODE
 GLV_LIBS    += -lXxf86vm
 # GLV_LIBS    += -L/usr/X11R6/lib

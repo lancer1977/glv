@@ -338,6 +338,7 @@ int glv_createVkDevice( GLView* view )
 
     dc.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     dc.pNext = NULL;
+    dc.flags = 0;
     dc.queueCreateInfoCount = 1;
     dc.pQueueCreateInfos = &qc;
     if( glv_attributes(view) & GLV_ATTRIB_DEBUG )
@@ -381,15 +382,23 @@ int glv_createVulkan( GLView* view, int attributes )
     VkResult err;
     uint32_t extCount;
 
+
     static const char* validationLayers[] = {
+#if 1
+        "VK_LAYER_LUNARG_standard_validation"
+#else
+        // NOTE: The layer order is not arbitrary; it's the order they will be inserted
+        //       by the loader.  Threading must be first and unique_objects must be last.
+        //       Standard_validation (if available) handles all this nonsense.
         "VK_LAYER_GOOGLE_threading",
         "VK_LAYER_LUNARG_parameter_validation",
-        "VK_LAYER_LUNARG_device_limits",
+      //"VK_LAYER_LUNARG_device_limits",
         "VK_LAYER_LUNARG_object_tracker",
-        "VK_LAYER_LUNARG_image",
+      //"VK_LAYER_LUNARG_image",
         "VK_LAYER_LUNARG_core_validation",
-        "VK_LAYER_LUNARG_swapchain",
+      //"VK_LAYER_LUNARG_swapchain",
         "VK_LAYER_GOOGLE_unique_objects"
+#endif
     };
 
     /*
@@ -428,7 +437,7 @@ int glv_createVulkan( GLView* view, int attributes )
     ic.pApplicationInfo = NULL; //&app,
     if( attributes & GLV_ATTRIB_DEBUG )
     {
-        ic.enabledLayerCount = 8;
+        ic.enabledLayerCount = 1;
         ic.ppEnabledLayerNames = validationLayers;
     }
     else

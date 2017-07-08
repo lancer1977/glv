@@ -6,7 +6,8 @@
   This example shows how to open a GLView in a desktop window.
   Press the escape key or click on the window close widget to exit.
 
-  gcc -DVK_USE_PLATFORM_XLIB_KHR -I../x11 -I$VULKAN_SDK/include vulkan.c -L../x11 -lglv-vk -L$VULKAN_SDK/lib -lvulkan -g -Wall
+# gcc -DVK_USE_PLATFORM_XLIB_KHR -I../x11 -I$VULKAN_SDK/include vulkan.c -L../x11 -lglv-vk -L$VULKAN_SDK/lib -lvulkan -g -Wall
+  gcc -DVK_USE_PLATFORM_XLIB_KHR -I../x11 vulkan.c -L../x11 -lglv-vk -lvulkan -g -Wall
 
 /===========================================================================*/
 
