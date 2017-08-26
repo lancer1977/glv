@@ -1,6 +1,6 @@
 Summary: A small, cross-platform display library for OpenGL
 Name: libglv0
-Version: 0.3.1
+Version: 0.3.2
 Release: 1
 License: MIT
 Group: Development/Libraries

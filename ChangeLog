@@ -1,6 +1,12 @@
                               GLV Change Log
 
 
+V0.3.2 - 26 Aug 2017
+
+    * Add glv_dpi() function for X11 & Win32.
+    * Add GLV_ATTRIB_ES2 to create context with OpenGL ES 2.0 profile on X11.
+
+
 V0.3.0 - 11 Nov 2004
 
     * Mac OS X version (without fullscreen support).

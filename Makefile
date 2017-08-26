@@ -1,7 +1,7 @@
 # GNU Makefile
 
 
-ARCHIVE = libglv-0.3.1
+ARCHIVE = libglv-0.3.2
 
 DIST_FILES = \
 	LICENSE \
@@ -21,7 +21,7 @@ DIST_FILES = \
 	win32/glv_keys.h \
 	win32/Makefile \
 	win32/GNUmakefile \
-	examples/project.r \
+	examples/project.b \
 	examples/Makefile \
 	examples/keystr.h \
 	examples/complete.c \
