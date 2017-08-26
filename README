@@ -42,9 +42,8 @@ Linux
   Run the following commands from the glv directory:
 
     > make -C x11
-    > make -C examples
-    > su
-    > make -C x11 install
+    > make -C examples -f Makefile.linux
+    > sudo make -C x11 install
 
 
 Windows
@@ -65,6 +64,5 @@ Mac OS X
 
     > make -C mac
     > make -C examples -f Makefile.mac
-    > su
-    > make -C mac install
+    > sudo make -C mac install
 

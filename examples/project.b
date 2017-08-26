@@ -12,6 +12,7 @@ default [
     unix [
         include_from %../x11
         libs_from %../x11 {glv}
+        lflags {-Wl,-z,origin,-rpath,'$$ORIGIN/../x11'}
         ;cflags {-Wno-unused-parameter}
     ]
     macx [

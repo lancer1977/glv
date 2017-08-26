@@ -22,10 +22,11 @@ DIST_FILES = \
 	win32/Makefile \
 	win32/GNUmakefile \
 	examples/project.b \
-	examples/Makefile \
+	examples/Makefile.linux \
 	examples/keystr.h \
 	examples/complete.c \
 	examples/doc.c \
+	examples/es2.c \
 	examples/window.c \
 	doc/html
 
