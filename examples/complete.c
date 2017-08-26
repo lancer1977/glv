@@ -22,11 +22,6 @@
 #endif
 #include <glv.h>
 #include <glv_keys.h>
-#ifdef __APPLE__
-#include <OpenGL/glu.h>
-#else
-#include <GL/glu.h>
-#endif
 #include "keystr.h"
 
 
@@ -159,7 +154,7 @@ void eventHandler( GLView* view, GLViewEvent* event )
             glMatrixMode( GL_PROJECTION );
             glLoadIdentity();
             //gluPerspective( 50, (float)w / (float)h, 5, 20 );
-            gluOrtho2D( -4, w+4, -4, h+4 );
+            glOrtho( -4, w+4, -4, h+4, -1.0, 1.0 );
             glMatrixMode( GL_MODELVIEW );
 
             glClearColor( 0.1f, 0.2f, 1.0f, 0 );
@@ -193,9 +188,10 @@ void eventHandler( GLView* view, GLViewEvent* event )
 
         case GLV_EVENT_KEY_DOWN:
         {
+            struct KeyStr* ks = keyStrings;
+
             printf( "testKeyDown %d %c\n", event->code, KEY_ASCII(event) );
 
-            struct KeyStr* ks = keyStrings;
             while( ks->str )
             {
                 if( ks->code == event->code )

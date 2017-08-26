@@ -16,11 +16,6 @@
 #include <stdlib.h>
 #include <glv.h>
 #include <glv_keys.h>
-#ifdef __APPLE__
-#include <OpenGL/glu.h>
-#else
-#include <GL/glu.h>
-#endif
 
 
 int quit = 0;
@@ -73,7 +68,7 @@ void eventHandler( GLView* view, GLViewEvent* event )
             glViewport( 0, 0, w, h );
             glMatrixMode( GL_PROJECTION );
             glLoadIdentity();
-            gluOrtho2D( -4, w+4, -4, h+4 );
+            glOrtho( -4, w+4, -4, h+4, -1.0, 1.0 );
             glMatrixMode( GL_MODELVIEW );
 
             repaint( view );
