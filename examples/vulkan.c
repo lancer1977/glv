@@ -383,6 +383,7 @@ static void setupBuffers( const GLView* view, VulkanState* vs )
 
     sc.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     sc.pNext = NULL;
+    sc.flags = 0;
     sc.surface = view->surface;
     sc.minImageCount = desiredSwapImages;
     sc.imageFormat = vs->format;
@@ -1029,6 +1030,10 @@ static void setupDepth( const GLView* view, VulkanState* vs )
     vc.pNext = NULL;
     vc.image = VK_NULL_HANDLE;
     vc.format = dformat;
+    vc.components.r = VK_COMPONENT_SWIZZLE_R;
+    vc.components.g = VK_COMPONENT_SWIZZLE_G;
+    vc.components.b = VK_COMPONENT_SWIZZLE_B;
+    vc.components.a = VK_COMPONENT_SWIZZLE_A;
     vc.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
     vc.subresourceRange.baseMipLevel = 0;
     vc.subresourceRange.levelCount = 1;
