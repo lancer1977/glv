@@ -1,0 +1,21 @@
+ifdef VULKAN_SDK
+GLSL_VALIDATOR=$(VULKAN_SDK)/bin/glslangValidator
+SDK_OPT=-I$(VULKAN_SDK)/include -L$(VULKAN_SDK)/lib
+else
+GLSL_VALIDATOR=glslangValidator
+SDK_OPT=
+endif
+
+all: vk_shader.vert.spv vk_shader.frag.spv vulkan
+
+vk_shader.vert.spv: vk_shader.vert
+	$(GLSL_VALIDATOR) -s -V -o $@ $<
+
+vk_shader.frag.spv: vk_shader.frag
+	$(GLSL_VALIDATOR) -s -V -o $@ $<
+
+vulkan: vulkan.c
+	gcc -DVK_USE_PLATFORM_XLIB_KHR -I../x11 $(SDK_OPT) -L../x11 -lglv-vk -lvulkan -g -Wall -o $@ $<
+
+clean:
+	@rm -f vk_shader.*.spv vulkan
