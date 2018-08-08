@@ -506,7 +506,7 @@ static void drawBuildCmd( VulkanState* vs, int width, int height )
     imb.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     imb.pNext = NULL;
     imb.srcAccessMask = 0;
-    imb.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    imb.dstAccessMask = 0;  // VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
     imb.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imb.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     imb.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -976,15 +976,20 @@ static void vs_setImageLayout( VulkanState* vs, VkImage image,
     }
     if( newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL )
         mb.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
+#if 0
+    // Validation error: pImageMemBarriers[0].dstAccessMask (0x400) is not
+    //                   supported by dstStageMask (0x1).
     if( newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL )
         mb.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
+    // Validation error: pImageMemBarriers[0].dstAccessMask (0x30) is not
+    //                   supported by dstStageMask (0x1).
     if (newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
         /* Make sure any Copy or CPU writes to image are flushed */
         mb.dstAccessMask = VK_ACCESS_SHADER_READ_BIT |
                            VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
     }
+#endif
 
     vkCmdPipelineBarrier( vs->setup, src_stages, dest_stages, 0, 0, NULL,
                           0, NULL, 1, &mb );
@@ -1169,7 +1174,7 @@ static void texobj_init( VulkanState* vs,
     tobj->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     vs_setImageLayout( vs, tobj->image, VK_IMAGE_ASPECT_COLOR_BIT,
                        VK_IMAGE_LAYOUT_PREINITIALIZED, tobj->imageLayout,
-                       VK_ACCESS_HOST_WRITE_BIT );
+                       0 /*VK_ACCESS_HOST_WRITE_BIT*/ );
     /* setting the image layout does not reference the actual memory so no need
      * to add a mem ref */
 }
@@ -1746,12 +1751,12 @@ int main( int argc, char** argv )
             glv_handleEvents( view );
             repaint( view );
 
-			if( vs.depthStencil > 0.99f )
-				vs.depthIncrement = -0.001f;
-			if( vs.depthStencil < 0.8f )
-				vs.depthIncrement = 0.001f;
-			vs.depthStencil += vs.depthIncrement;
-			//vkDeviceWaitIdle( view->device );
+            if( vs.depthStencil > 0.99f )
+                vs.depthIncrement = -0.001f;
+            if( vs.depthStencil < 0.8f )
+                vs.depthIncrement = 0.001f;
+            vs.depthStencil += vs.depthIncrement;
+            //vkDeviceWaitIdle( view->device );
         }
 
         vs_free( view->inst, &vs );

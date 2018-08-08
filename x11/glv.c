@@ -387,8 +387,9 @@ int glv_createVulkan( GLView* view, int attributes )
 #if 1
         "VK_LAYER_LUNARG_standard_validation"
 #else
-        // NOTE: The layer order is not arbitrary; it's the order they will be inserted
-        //       by the loader.  Threading must be first and unique_objects must be last.
+        // NOTE: The layer order is not arbitrary; it's the order they will be
+        //       inserted by the loader.  Threading must be first and
+        //       unique_objects must be last.
         //       Standard_validation (if available) handles all this nonsense.
         "VK_LAYER_GOOGLE_threading",
         "VK_LAYER_LUNARG_parameter_validation",
@@ -400,6 +401,12 @@ int glv_createVulkan( GLView* view, int attributes )
         "VK_LAYER_GOOGLE_unique_objects"
 #endif
     };
+
+#if 0
+    uint32_t layerCount = 0;
+    vkEnumerateInstanceLayerProperties(&layerCount, NULL);
+    printf( "KR layerCount %d\n", layerCount );
+#endif
 
     /*
     static const VkApplicationInfo app = {

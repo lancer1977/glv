@@ -27,7 +27,7 @@ GLV_OBJECTS  = glv.o
 PREFIX       = /usr/local
 # DESTDIR used for staged installs.
 LIB_DIR      = $(DESTDIR)$(PREFIX)/lib
-HEADER_DIR   = $(DESTDIR)$(PREFIX)/include/GL
+HEADER_DIR   = $(DESTDIR)$(PREFIX)/include/vulkan
 
 
 GLV_CFLAGS  += -DVK_USE_PLATFORM_XLIB_KHR
