@@ -81,8 +81,11 @@ typedef struct
     SwapchainBuffers* buffers;
     uint32_t swapchainImageCount;
     uint32_t currentBuffer;
+    int  surfWidth;
+    int  surfHeight;
     char useStagingBuffer;
     char prepared;
+    char doRepaint;
     char quit;
 
     float depthStencil;
@@ -113,6 +116,14 @@ typedef struct
     VkDebugReportCallbackEXT report;
 }
 VulkanState;
+
+
+enum DoRepaint
+{
+    DO_REPAINT_IGNORE,
+    DO_REPAINT_DRAW,
+    DO_REPAINT_RESIZE
+};
 
 
 #if 0
@@ -221,7 +232,6 @@ void vert_init( VulkanState* vs, Vertices* vobj, const float* vattr,
     assert(!err);
 
     vkGetBufferMemoryRequirements( vs->device, vobj->buf, &mem_reqs );
-    assert(!err);
 
     ma.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     ma.pNext = NULL;
@@ -349,17 +359,24 @@ static void setupBuffers( const GLView* view, VulkanState* vs )
     {
         // If the surface size is undefined, the size is set to
         // the size of the images requested.
-        swapchainExtent.width  = view->width;
-        swapchainExtent.height = view->height;
+        swapchainExtent.width  = vs->surfWidth  = view->width;
+        swapchainExtent.height = vs->surfHeight = view->height;
     }
     else
     {
         // If the surface size is defined, the swap chain size must match
         swapchainExtent = scap.currentExtent;
-        //view->width     = scap.currentExtent.width;
-        //view->height    = scap.currentExtent.height;
-        assert( view->width == scap.currentExtent.width );
-        assert( view->height == scap.currentExtent.height );
+        vs->surfWidth   = scap.currentExtent.width;
+        vs->surfHeight  = scap.currentExtent.height;
+        // NOTE: The surface dimensions may not match GLView here as the
+        // window events may not have been handled yet.
+#if 0
+        if( view->width != scap.currentExtent.width ||
+            view->height != scap.currentExtent.height )
+            printf( "KR surface: %d,%d\n      view: %d,%d\n",
+                    scap.currentExtent.width, scap.currentExtent.height,
+                    view->width, view->height );
+#endif
     }
 
     // Determine the number of VkImage's to use in the swap chain (we desire to
@@ -576,7 +593,8 @@ static void drawBuildCmd( VulkanState* vs, int width, int height )
 }
 
 
-void vs_resize( const GLView* view, VulkanState* vs );
+void vs_initBuffers( const GLView* view, VulkanState* vs );
+void vs_freeBuffers( VulkanState* vs, int freeSwapchain );
 
 void repaint( GLView* view )
 {
@@ -587,6 +605,16 @@ void repaint( GLView* view )
     VulkanState* vs = (VulkanState*) view->user;
     VkResult err;
 
+    if( vs->doRepaint == DO_REPAINT_IGNORE )
+        return;
+    if( vs->doRepaint == DO_REPAINT_RESIZE )
+    {
+        // In order to properly handle window resizing, we must re-create the
+        // swapchain AND redo the command buffers, etc.
+        if( vs->prepared )
+            vs_freeBuffers( vs, 0 );
+        vs_initBuffers( view, vs );
+    }
 
     err = vkCreateSemaphore( view->device, &sc, NULL, &presentComplete );
     assert(!err);
@@ -600,7 +628,8 @@ void repaint( GLView* view )
     {
         // vs->swapchain is out of date (e.g. the window was resized) and
         // must be recreated:
-        vs_resize( view, vs );
+resize:
+        vs->doRepaint = DO_REPAINT_RESIZE;
         repaint( view );
         vkDestroySemaphore( view->device, presentComplete, NULL );
         return;
@@ -622,7 +651,7 @@ void repaint( GLView* view )
     // engine has fully released ownership to the application, and it is
     // okay to render to the image.
 
-    drawBuildCmd( vs, view->width, view->height );
+    drawBuildCmd( vs, vs->surfWidth, vs->surfHeight );
 
     {
     VkPipelineStageFlags pipe_stage_flags =
@@ -658,7 +687,7 @@ void repaint( GLView* view )
     {
         // vs->swapchain is out of date (e.g. the window was resized) and
         // must be recreated:
-        vs_resize( view, vs );
+        goto resize;
     }
     else if( err == VK_SUBOPTIMAL_KHR )
     {
@@ -675,34 +704,59 @@ void repaint( GLView* view )
     assert(err == VK_SUCCESS);
 
     vkDestroySemaphore( view->device, presentComplete, NULL );
+    vs->doRepaint = DO_REPAINT_IGNORE;
+}
+
+
+void vs_signalResize( VulkanState* vs )
+{
+    vs->doRepaint = DO_REPAINT_RESIZE;
+}
+
+
+void vs_signalRepaint( VulkanState* vs )
+{
+    // Don't overwrite DO_REPAINT_RESIZE.
+    if( vs->doRepaint == DO_REPAINT_IGNORE )
+        vs->doRepaint = DO_REPAINT_DRAW;
 }
 
 
 void eventHandler( GLView* view, GLViewEvent* event )
 {
-#define VSTATE(vp)  ((VulkanState*) vp->user)
+    VulkanState* vs = (VulkanState*) view->user;
 
     switch( event->type )
     {
         case GLV_EVENT_RESIZE:
+            if( view->width == vs->surfWidth &&
+                view->height == vs->surfHeight )
+            {
+                printf( "testResize %d %d (SKIP; surface already updated)\n",
+                        event->x, event->y );
+                return;
+            }
             printf( "testResize %d %d\n", event->x, event->y );
-            vs_resize( view, VSTATE(view) );
-            repaint( view );
+            vs_signalResize( vs );
             break;
 
         case GLV_EVENT_EXPOSE:
             printf( "testExpose\n" );
-            repaint( view );
+            vs_signalRepaint( vs );
+            break;
+
+        case GLV_EVENT_MOTION:
+            vs_signalRepaint( vs );
             break;
 
         case GLV_EVENT_KEY_DOWN:
             if( event->code == KEY_Escape )
-                VSTATE(view)->quit = 1;
+                vs->quit = 1;
             break;
 
         case GLV_EVENT_CLOSE:
             printf( "testClose\n" );
-            VSTATE(view)->quit = 1;
+            vs->quit = 1;
             break;
     }
 }
@@ -772,8 +826,11 @@ void vs_init( GLView* view, VulkanState* vs )
     vs->draw        = VK_NULL_HANDLE;
     vs->swapchain   = VK_NULL_HANDLE;
     vs->currentBuffer = 0;
+    vs->surfWidth   =
+    vs->surfHeight  = 0;
     vs->useStagingBuffer = 0;
     vs->prepared = 0;
+    vs->doRepaint = DO_REPAINT_IGNORE;
     vs->quit = 0;
 
     vs->depthStencil = 1.0;
@@ -850,6 +907,7 @@ void vs_freeBuffers( VulkanState* vs, int freeSwapchain )
     uint32_t i;
 
     vs->prepared = 0;
+    vkDeviceWaitIdle( device );
 
     for( i = 0; i < vs->swapchainImageCount; ++i )
         vkDestroyFramebuffer( device, vs->framebuffers[i], NULL );
@@ -885,19 +943,6 @@ void vs_freeBuffers( VulkanState* vs, int freeSwapchain )
     if( freeSwapchain )
         vs->DestroySwapchain( device, vs->swapchain, NULL );
     free( vs->buffers );
-}
-
-
-void vs_initBuffers( const GLView*, VulkanState* );
-
-void vs_resize( const GLView* view, VulkanState* vs )
-{
-    // In order to properly resize the window, we must re-create the swapchain
-    // AND redo the command buffers, etc.
-
-    if( vs->prepared )
-        vs_freeBuffers( vs, 0 );
-    vs_initBuffers( view, vs );
 }
 
 
@@ -997,7 +1042,7 @@ static void vs_setImageLayout( VulkanState* vs, VkImage image,
 }
 
 
-static void setupDepth( const GLView* view, VulkanState* vs )
+static void setupDepth( VkDevice device, VulkanState* vs )
 {
     VkImageCreateInfo ic;
     VkMemoryAllocateInfo ma;
@@ -1013,8 +1058,8 @@ static void setupDepth( const GLView* view, VulkanState* vs )
     ic.flags = 0;
     ic.imageType = VK_IMAGE_TYPE_2D;
     ic.format = dformat;
-    ic.extent.width  = view->width;
-    ic.extent.height = view->height;
+    ic.extent.width  = vs->surfWidth;
+    ic.extent.height = vs->surfHeight;
     ic.extent.depth  = 1;
     ic.mipLevels = 1;
     ic.arrayLayers = 1;
@@ -1051,11 +1096,11 @@ static void setupDepth( const GLView* view, VulkanState* vs )
     vs->depth.format = dformat;
 
     /* create image */
-    err = vkCreateImage( view->device, &ic, NULL, &vs->depth.image );
+    err = vkCreateImage( device, &ic, NULL, &vs->depth.image );
     assert(!err);
 
     /* get memory requirements for this object */
-    vkGetImageMemoryRequirements( view->device, vs->depth.image, &memReq );
+    vkGetImageMemoryRequirements( device, vs->depth.image, &memReq );
 
     /* select memory size and type */
     ma.allocationSize = memReq.size;
@@ -1065,11 +1110,11 @@ static void setupDepth( const GLView* view, VulkanState* vs )
     assert(pass);
 
     /* allocate memory */
-    err = vkAllocateMemory( view->device, &ma, NULL, &vs->depth.mem );
+    err = vkAllocateMemory( device, &ma, NULL, &vs->depth.mem );
     assert(!err);
 
     /* bind memory */
-    err = vkBindImageMemory( view->device, vs->depth.image, vs->depth.mem, 0 );
+    err = vkBindImageMemory( device, vs->depth.image, vs->depth.mem, 0 );
     assert(!err);
     vs_setImageLayout( vs, vs->depth.image, VK_IMAGE_ASPECT_DEPTH_BIT,
                        VK_IMAGE_LAYOUT_UNDEFINED,
@@ -1078,7 +1123,7 @@ static void setupDepth( const GLView* view, VulkanState* vs )
 
     /* create image view */
     vc.image = vs->depth.image;
-    err = vkCreateImageView( view->device, &vc, NULL, &vs->depth.view );
+    err = vkCreateImageView( device, &vc, NULL, &vs->depth.view );
     assert(!err);
 }
 
@@ -1704,7 +1749,7 @@ void vs_initBuffers( const GLView* view, VulkanState* vs )
 
 
     setupBuffers( view, vs );
-    setupDepth( view, vs );
+    setupDepth( view->device, vs );
     setupTextures( view, vs );
     vert_init( vs, &vs->vertices, vb, sizeof(vb), sizeof(float) * FPV );
     setupDescLayout( vs );
@@ -1714,8 +1759,7 @@ void vs_initBuffers( const GLView* view, VulkanState* vs )
     setupDescriptorPool( vs );
     setupDescriptorSet( vs );
 
-    setupFramebuffers( vs, view->width, view->height );
-
+    setupFramebuffers( vs, vs->surfWidth, vs->surfHeight );
     vs->prepared = 1;
 }
 
