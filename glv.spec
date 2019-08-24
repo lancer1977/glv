@@ -1,7 +1,7 @@
 Summary: A small, cross-platform display library for OpenGL
 Name: libglv0
 Version: 0.3.2
-Release: 1
+Release: 2
 License: MIT
 Group: Development/Libraries
 Source: libglv-%{version}.tar.gz
@@ -18,6 +18,8 @@ BuildRequires: libmesagl1-devel
 %if 0%{?suse_version}
 BuildRequires: Mesa-devel
 %endif
+
+%global debug_package %{nil}
 
 %description
 The GLV library provides a small, cross-platform, C interface for creating
@@ -37,10 +39,6 @@ install -m 755 x11/libglv.so.0.3 $RPM_BUILD_ROOT%{_libdir}
 ln -s libglv.so.0.3 $RPM_BUILD_ROOT%{_libdir}/libglv.so.0
 ln -s libglv.so.0.3 $RPM_BUILD_ROOT%{_libdir}/libglv.so
 
-%post -p /sbin/ldconfig
-
-%postun -p /sbin/ldconfig
-
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -54,3 +52,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/GL/glv_keys.h
 
 %changelog
+* Sat Aug 24 2019 Karl Robillard <wickedsmoke@users.sf.net> - 0.3.2-2
+  - Set debug_package to nil to enable rpmbuild to complete.
+  - Remove unneeded post/postun ldconfig.
