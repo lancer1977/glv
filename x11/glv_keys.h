@@ -13,6 +13,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
+//#include <X11/XF86keysym.h>
 
 
 #define KEY_Grave        XK_grave
@@ -130,6 +131,11 @@
 #define KEY_F13     XK_F13
 #define KEY_F14     XK_F14
 #define KEY_F15     XK_F15
+
+//#define KEY_Volume_Up   XF86XK_AudioLowerVolume
+//#define KEY_Volume_Down XF86XK_AudioLowerVolume
+//#define KEY_Power       XF86XK_PowerOff
+#define KEY_Help    XK_Help
 
 
 #define KEY_ASCII(e)        glv_ascii()
