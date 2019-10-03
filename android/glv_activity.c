@@ -283,6 +283,13 @@ static void process_cmd(struct android_app* app, struct android_poll_source* sou
             {
                 glv_initEGL( &app->view, app->window );
                 //engine_draw_frame(glv);
+
+                /*
+                ve.type = GLV_EVENT_RESIZE;
+                ve.x    = view->width;
+                ve.y    = view->height;
+                goto dispatch;
+                */
             }
             break;
 

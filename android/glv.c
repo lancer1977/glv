@@ -105,6 +105,8 @@ GLView* glv_create( int attributes )
 {
     GLView* view;
 
+    /* On Android the GLView is actually part of android_app, so gGlvApp is
+       used to get a handle to that struct. */
     if( ! gGlvApp )
         return NULL;
     view = &gGlvApp->view;
@@ -342,25 +344,6 @@ void glv_waitEvent( GLView* view )
 }
 
 
-//static XKeyEvent* glv_keyEvent;
-
-
-/*
-  Note that the KeySym returned from XLookupString takes into account the
-  Shift key whereas XKeycodeToKeysym does not.
-*/
-#define KEYSYM(e)   XKeycodeToKeysym( view->display, e.xkey.keycode, 0 )
-
-
-#define COPY_KEY(ve,xe,t) \
-        glv_keyEvent = &xe.xkey; \
-        ve.type  = t; \
-        ve.code  = KEYSYM(xe); \
-        ve.state = xe.xkey.state; \
-        ve.x     = xe.xkey.x; \
-        ve.y     = xe.xkey.y;
-
-
 /**
   Calls the event handler for all pending events.
 
@@ -387,170 +370,13 @@ void glv_handleEvents( GLView* view )
     struct android_poll_source* source;
     int ident;
     int events;
-    int haveKeyUp = 0;
 
-    /*
-       glv_filterRepeatKeys may be called from event handler.
-       This avoids a filter state change until the next glv_handleEvents.
-    */
-    int filter = view->flags & FLAG_FILTER_REPEAT;
 
     while( (ident = ALooper_pollAll(0, NULL, &events, (void**)&source)) >= 0 )
     {
         if( source != NULL )
             source->process( gGlvApp, source );
-#if 0
-        switch( event.type )
-        {
-            case ClientMessage:
-                if( (event.xclient.format == 32) &&
-                    (event.xclient.data.l[ 0 ] == (int) view->deleteAtom) )
-                {
-                    ve.type = GLV_EVENT_CLOSE;
-                    view->eventHandler( view, &ve );
-                }
-                break;
-
-            case ConfigureNotify:
-                if( event.xconfigure.window == view->window )
-                {
-                    if( (view->width != event.xconfigure.width) ||
-                        (view->height != event.xconfigure.height) )
-                    {
-                        view->width  = event.xconfigure.width;
-                        view->height = event.xconfigure.height;
-
-                        ve.type = GLV_EVENT_RESIZE;
-                        ve.x    = view->width;
-                        ve.y    = view->height;
-                        view->eventHandler( view, &ve );
-                    }
-                }
-                break;
-
-            case ButtonPress:
-                if( event.xbutton.button == Button4 )
-                {
-                    ve.type  = GLV_EVENT_WHEEL;
-                    ve.code  = 0;
-                    ve.state = event.xbutton.state;
-                    ve.x     = 0;
-                    ve.y     = GLV_WHEEL_DELTA;
-                    view->eventHandler( view, &ve );
-                }
-                else if( event.xbutton.button == Button5 )
-                {
-                    ve.type  = GLV_EVENT_WHEEL;
-                    ve.code  = 0;
-                    ve.state = event.xbutton.state;
-                    ve.x     = 0;
-                    ve.y     = -GLV_WHEEL_DELTA;
-                    view->eventHandler( view, &ve );
-                }
-                else
-                {
-                    ve.type  = GLV_EVENT_BUTTON_DOWN;
-                    ve.code  = event.xbutton.button;
-                    ve.state = event.xbutton.state;
-                    ve.x     = event.xbutton.x;
-                    ve.y     = event.xbutton.y;
-                    view->eventHandler( view, &ve );
-                }
-                break;
-
-            case ButtonRelease:
-                if( event.xbutton.button != Button4 &&
-                    event.xbutton.button != Button5 )
-                {
-                    ve.type  = GLV_EVENT_BUTTON_UP;
-                    ve.code  = event.xbutton.button;
-                    ve.state = event.xbutton.state;
-                    ve.x     = event.xbutton.x;
-                    ve.y     = event.xbutton.y;
-                    view->eventHandler( view, &ve );
-                }
-                break;
-
-            case MotionNotify:
-                ve.type  = GLV_EVENT_MOTION;
-                ve.code  = 0;
-                ve.state = event.xmotion.state;
-                ve.x     = event.xmotion.x;
-                ve.y     = event.xmotion.y;
-                view->eventHandler( view, &ve );
-                break;
-
-            case KeyPress:
-                if( filter && haveKeyUp )
-                {
-                    if( (event.xkey.keycode != prevKeyUp.xkey.keycode) ||
-                        (event.xkey.time != prevKeyUp.xkey.time) )
-                    {
-                        COPY_KEY( ve, prevKeyUp, GLV_EVENT_KEY_UP )
-                        view->eventHandler( view, &ve );
-
-                        COPY_KEY( ve, event, GLV_EVENT_KEY_DOWN )
-                        view->eventHandler( view, &ve );
-                    }
-                    haveKeyUp = 0;
-                }
-                else
-                {
-                    COPY_KEY( ve, event, GLV_EVENT_KEY_DOWN )
-                    view->eventHandler( view, &ve );
-                }
-                break;
-
-            case KeyRelease:
-                if( filter )
-                {
-                    if( haveKeyUp )
-                    {
-                        COPY_KEY( ve, prevKeyUp, GLV_EVENT_KEY_UP )
-                        view->eventHandler( view, &ve );
-                    }
-                    prevKeyUp = event;
-                    haveKeyUp = 1;
-                }
-                else
-                {
-                    COPY_KEY( ve, event, GLV_EVENT_KEY_UP )
-                    view->eventHandler( view, &ve );
-                }
-                break;
-
-            case FocusIn:
-                /* event.xfocus */
-                ve.type  = GLV_EVENT_FOCUS_IN;
-                view->eventHandler( view, &ve );
-                break;
-
-            case FocusOut:
-                /* event.xfocus */
-                ve.type  = GLV_EVENT_FOCUS_OUT;
-                view->eventHandler( view, &ve );
-                break;
-
-            case Expose:
-                /* event.xexpose */
-                ve.type  = GLV_EVENT_EXPOSE;
-                view->eventHandler( view, &ve );
-                break;
-
-            default:
-                /*unknownEvent( &event );*/
-                break;
-        }
-#endif
     }
-
-#if 0
-    if( haveKeyUp )
-    {
-        COPY_KEY( ve, prevKeyUp, GLV_EVENT_KEY_UP )
-        view->eventHandler( view, &ve );
-    }
-#endif
 }
 
 
@@ -573,11 +399,6 @@ void glv_filterRepeatKeys( GLView* view, int on )
 */
 int glv_ascii()
 {
-    /*
-    char buf[ 4 ];
-    if( XLookupString( glv_keyEvent, buf, 4, NULL, NULL ) == 1 )
-        return *buf;
-    */
     return 0;
 }
 
