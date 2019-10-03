@@ -40,7 +40,7 @@ extern "C" {
  * risk having the system force-close the application. This programming
  * model is direct, lightweight, but constraining.
  *
- * The 'threaded_native_app' static library is used to provide a different
+ * The 'android_native_app_glue' static library is used to provide a different
  * execution model where the application can implement its own main event
  * loop in a different thread instead. Here's how it works:
  *
@@ -88,8 +88,7 @@ struct android_app;
  * Data associated with an ALooper fd that will be returned as the "outData"
  * when that source has data ready.
  */
-struct android_poll_source
-{
+struct android_poll_source {
     // The identifier of this source.  May be LOOPER_ID_MAIN or
     // LOOPER_ID_INPUT.
     int32_t id;
@@ -110,9 +109,23 @@ struct android_poll_source
  * VM, although it will need to be in order to make JNI calls any
  * Java objects.
  */
-struct android_app
-{
+struct android_app {
+#ifdef GLV_H
     GLView view;
+#else
+    // The application can place a pointer to its own state object
+    // here if it likes.
+    void* userData;
+
+    // Fill this in with the function to process main app commands (APP_CMD_*)
+    void (*onAppCmd)(struct android_app* app, int32_t cmd);
+
+    // Fill this in with the function to process input events.  At this point
+    // the event has already been pre-dispatched, and it will be finished upon
+    // return.  Return 1 if you have handled the event, 0 for any default
+    // dispatching.
+    int32_t (*onInputEvent)(struct android_app* app, AInputEvent* event);
+#endif
 
     // The ANativeActivity object instance that this app is running in.
     ANativeActivity* activity;
@@ -143,7 +156,9 @@ struct android_app
 
     // Current content rectangle of the window; this is the area where the
     // window's content should be placed to be seen by the user.
-    //ARect contentRect;
+#ifndef GLV_H
+    ARect contentRect;
+#endif
 
     // Current state of the app's activity.  May be either APP_CMD_START,
     // APP_CMD_RESUME, APP_CMD_PAUSE, or APP_CMD_STOP; see below.
@@ -173,7 +188,9 @@ struct android_app
     short redrawNeeded;
     AInputQueue* pendingInputQueue;
     ANativeWindow* pendingWindow;
-    //ARect pendingContentRect;
+#ifndef GLV_H
+    ARect pendingContentRect;
+#endif
 };
 
 enum {
@@ -303,7 +320,9 @@ enum {
     APP_CMD_DESTROY,
 };
 
-int android_app_wait_window( struct android_app* app );
+#ifdef GLV_H
+int android_app_wait_window(struct android_app* app);
+#endif
 
 /**
  * Call when ALooper_pollAll() returns LOOPER_ID_MAIN, reading the next
@@ -329,7 +348,7 @@ void android_app_post_exec_cmd(struct android_app* android_app, int8_t cmd);
  * This is the function that application code must implement, representing
  * the main entry to the app.
  */
-extern void android_main( struct android_app* app );
+extern void android_main(struct android_app* app);
 
 #ifdef __cplusplus
 }
