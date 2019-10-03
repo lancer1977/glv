@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <glv.h>
 #include <glv_activity.h>
+#include <EGL/eglext.h>         /* Defines EGL_OPENGL_ES3_BIT_KHR */
 
 
 #define FLAG_ATTRIB                 0x000f
@@ -30,7 +31,7 @@ void glv_nullHandler( void* v, GLViewEvent* e )
 void glv_initEGL( GLView* view, ANativeWindow* window )
 {
     const EGLint fbAttr[] = {
-        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT_KHR,
         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
         EGL_BLUE_SIZE, 8,
         EGL_GREEN_SIZE, 8,
@@ -38,7 +39,7 @@ void glv_initEGL( GLView* view, ANativeWindow* window )
         EGL_NONE
     };
     const EGLint ctxAttr[] = {
-        EGL_CONTEXT_CLIENT_VERSION, 2,
+        EGL_CONTEXT_CLIENT_VERSION, 3,
         EGL_NONE
     };
     EGLConfig config;

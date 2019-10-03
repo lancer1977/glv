@@ -9,7 +9,7 @@
 
 
 #include <EGL/egl.h>
-#include <GLES2/gl2.h>
+#include <GLES3/gl31.h>     /* Available in android-21 (5.0 Lollipop) */
 
 
 typedef struct {

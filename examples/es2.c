@@ -1,11 +1,11 @@
 /*
-  OpenGL ES 2.0 GLV Example
+  OpenGL ES GLV Example
   Draws a multi-colored triangle on a blue background.
 */
 
 
 #if 0
-#include <GLES2/gl2.h>
+#include <GLES3/gl3.h>
 #else
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
@@ -202,13 +202,13 @@ int main()
 
     view = glv_create( GLV_ATTRIB_DOUBLEBUFFER |
                        GLV_ATTRIB_MULTISAMPLE |
-                       GLV_ATTRIB_ES2 );
+                       GLV_ATTRIB_ES );
     if( view )
     {
         printf( "GL_VERSION: %s\n", (char*) glGetString( GL_VERSION ) );
 
         view->user = &data;
-        glv_setTitle( view, "GLV ES 2.0 Test" );
+        glv_setTitle( view, "GLV ES Test" );
         glv_setEventHandler( view, eventHandler );
 
         glv_changeMode( view, &mode );

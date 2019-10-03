@@ -349,15 +349,15 @@ GLView* glv_create( int attributes )
     }
 #endif
 
-    if( attributes & GLV_ATTRIB_ES2 )
+    if( attributes & GLV_ATTRIB_ES )
     {
-#if defined(GLX_VERSION_1_4) && defined(GLX_CONTEXT_ES2_PROFILE_BIT_EXT)
-        /* Requires "GLX_EXT_create_context_es2_profile" */
+#if defined(GLX_VERSION_1_4) && defined(GLX_CONTEXT_ES_PROFILE_BIT_EXT)
+        /* Requires "GLX_EXT_create_context_es_profile" */
         int ctxAttr[] =
         {
-            GLX_CONTEXT_MAJOR_VERSION_ARB, 2,
-            GLX_CONTEXT_MINOR_VERSION_ARB, 0,
-            GLX_CONTEXT_PROFILE_MASK_ARB,  GLX_CONTEXT_ES2_PROFILE_BIT_EXT,
+            GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+            GLX_CONTEXT_MINOR_VERSION_ARB, 2,
+            GLX_CONTEXT_PROFILE_MASK_ARB,  GLX_CONTEXT_ES_PROFILE_BIT_EXT,
             None
         };
         PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB =
@@ -372,11 +372,11 @@ GLView* glv_create( int attributes )
                                                 ctxAttr );
         if( ! view->ctx )
         {
-            fprintf( stderr, "Could not create ES2 profile GLXContext\n" );
+            fprintf( stderr, "Could not create ES 3.2 profile GLXContext\n" );
             goto fail_fb;
         }
 #else
-        fprintf( stderr, "libglv not compiled with GLV_ATTRIB_ES2 support\n" );
+        fprintf( stderr, "libglv not compiled with GLV_ATTRIB_ES support\n" );
         goto fail_fb;
 #endif
     }
