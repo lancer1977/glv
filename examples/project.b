@@ -33,8 +33,8 @@ exe "complete" [
     sources [ %complete.c ]
 ]
 
-exe "es2" [
-    sources [ %es2.c ]
+exe "es_profile" [
+    sources [ %es_profile.c ]
 ]
 
 ;eof
