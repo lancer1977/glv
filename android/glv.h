@@ -92,13 +92,13 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_WHEEL_DELTA     120
 
 /* GLViewEvent state masks */
-#define GLV_MASK_SHIFT      0x01    //AMETA_SHIFT_ON
-#define GLV_MASK_CTRL       0x02    //AMETA_CTRL_ON
-#define GLV_MASK_ALT        0x04    //AMETA_ALT_ON
-#define GLV_MASK_CAPS       0x08    //AMETA_CAPS_LOCK_ON
-#define GLV_MASK_LEFT       0x10    //AMOTION_EVENT_BUTTON_PRIMARY
-#define GLV_MASK_MIDDLE     0x20    //AMOTION_EVENT_BUTTON_SECONDARY
-#define GLV_MASK_RIGHT      0x40    //AMOTION_EVENT_BUTTON_TERTIARY
+#define GLV_MASK_SHIFT      0x01        // AMETA_SHIFT_ON
+#define GLV_MASK_CTRL       0x1000      // AMETA_CTRL_ON
+#define GLV_MASK_ALT        0x02        // AMETA_ALT_ON
+#define GLV_MASK_CAPS       0x100000    // AMETA_CAPS_LOCK_ON
+#define GLV_MASK_LEFT       0x10        // AMOTION_EVENT_BUTTON_PRIMARY   << 4
+#define GLV_MASK_MIDDLE     0x20        // AMOTION_EVENT_BUTTON_SECONDARY << 4
+#define GLV_MASK_RIGHT      0x40        // AMOTION_EVENT_BUTTON_TERTIARY  << 4
 
 
 #ifdef __cplusplus

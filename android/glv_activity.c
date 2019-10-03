@@ -237,7 +237,9 @@ static void process_input( struct android_app* app,
                 }
 
                 ve.code  = AKeyEvent_getKeyCode( ie );
-                ve.state = AKeyEvent_getFlags( ie );
+                //       = AKeyEvent_getScanCode( ie );
+                ve.state = AKeyEvent_getMetaState( ie );
+                //       = AKeyEvent_getFlags( ie );
                 ve.x     = 0;
                 ve.y     = 0;
 
@@ -252,7 +254,8 @@ static void process_input( struct android_app* app,
 
                 ve.type  = GLV_EVENT_MOTION;
                 ve.code  = 0;
-                ve.state = AMotionEvent_getFlags( ie );
+                ve.state = AMotionEvent_getButtonState( ie ) << 4;
+                //       = AMotionEvent_getFlags( ie );
                 ve.x     = (int) AMotionEvent_getX( ie, 0 );
                 ve.y     = (int) AMotionEvent_getY( ie, 0 );
 
