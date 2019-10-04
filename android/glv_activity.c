@@ -201,11 +201,13 @@ static void process_input(struct android_app* app, struct android_poll_source* s
     AInputEvent* event = NULL;
     GLViewEvent ve;
     int32_t type;
+    int32_t isrc;
     int32_t handled;
 
     while (AInputQueue_getEvent(app->inputQueue, &event) >= 0) {
         type = AInputEvent_getType( event );
-        LOGV("New input event: type=%d\n", type);
+        isrc = AInputEvent_getSource( event );
+        LOGV("New input event: type=%d source=0x%08X\n", type, isrc);
         if (AInputQueue_preDispatchEvent(app->inputQueue, event)) {
             continue;
         }
@@ -215,46 +217,77 @@ static void process_input(struct android_app* app, struct android_poll_source* s
         {
             case AINPUT_EVENT_TYPE_KEY:
             {
-                GLView* view = &app->view;
-
-                switch( AKeyEvent_getAction( event ) )
-                {
+                switch( AKeyEvent_getAction( event ) ) {
                     case AKEY_EVENT_ACTION_DOWN:
-                        ve.type = GLV_EVENT_KEY_DOWN;
+                        type = GLV_EVENT_KEY_DOWN;
                         break;
                     case AKEY_EVENT_ACTION_UP:
-                        ve.type = GLV_EVENT_KEY_UP;
+                        type = GLV_EVENT_KEY_UP;
                         break;
                     case AKEY_EVENT_ACTION_MULTIPLE:
-                        ve.type = GLV_EVENT_KEY_DOWN;
+                        type = GLV_EVENT_KEY_DOWN;
+                        break;
+                    default:
+                        type = 0;
                         break;
                 }
 
-                ve.code  = AKeyEvent_getKeyCode( event );
-                //       = AKeyEvent_getScanCode( event );
-                ve.state = AKeyEvent_getMetaState( event );
-                //       = AKeyEvent_getFlags( event );
-                ve.x     = 0;
-                ve.y     = 0;
+                if( type ) {
+                    GLView* view = &app->view;
 
-                view->eventHandler( view, &ve );
-                handled = 1;
+                    ve.type  = type;
+                    ve.code  = AKeyEvent_getKeyCode( event );
+                    //       = AKeyEvent_getScanCode( event );
+                    ve.state = AKeyEvent_getMetaState( event );
+                    //       = AKeyEvent_getFlags( event );
+                    ve.x     = 0;
+                    ve.y     = 0;
+
+                    view->eventHandler( view, &ve );
+                    handled = 1;
+                }
             }
                 break;
 
             case AINPUT_EVENT_TYPE_MOTION:
             {
-                GLView* view = &app->view;
+                int32_t action = AMotionEvent_getAction( event );
+                size_t count = AMotionEvent_getPointerCount( event );
+                LOGV("motion action: 0x%X button-state: 0x%X pcount: %lu\n",
+                        action, AMotionEvent_getButtonState(event), count);
 
-                ve.type  = GLV_EVENT_MOTION;
-                ve.code  = 0;
-                ve.state = AMotionEvent_getButtonState( event ) << 4;
-                //       = AMotionEvent_getFlags( event );
-                ve.x     = (int) AMotionEvent_getX( event, 0 );
-                ve.y     = (int) AMotionEvent_getY( event, 0 );
+                // Only support single touch.
+                if( count > 1 )
+                    break;
 
-                view->eventHandler( view, &ve );
-                handled = 1;
+                switch( action & AMOTION_EVENT_ACTION_MASK ) {
+                    case AMOTION_EVENT_ACTION_DOWN:
+                        type = GLV_EVENT_BUTTON_DOWN;
+                        break;
+                    case AMOTION_EVENT_ACTION_UP:
+                        type = GLV_EVENT_BUTTON_UP;
+                        break;
+                    case AMOTION_EVENT_ACTION_MOVE:
+                        type = GLV_EVENT_MOTION;
+                        break;
+                    default:
+                        type = 0;
+                        break;
+                }
+
+                if( type ) {
+                    GLView* view = &app->view;
+
+                    ve.type  = type;
+                    ve.code  = (type == GLV_EVENT_MOTION) ? 0 : GLV_BUTTON_LEFT;
+                    ve.state = AMotionEvent_getButtonState( event ) << 4;
+                    //       = AMotionEvent_getFlags( event );
+                    ve.x     = (int) AMotionEvent_getX( event, 0 );
+                    ve.y     = (int) AMotionEvent_getY( event, 0 );
+
+                    view->eventHandler( view, &ve );
+                    handled = 1;
+                }
             }
                 break;
         }
