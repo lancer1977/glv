@@ -649,3 +649,59 @@ void ANativeActivity_onCreate(ANativeActivity* activity, void* savedState,
 
     activity->instance = android_app_create(activity, savedState, savedStateSize);
 }
+
+void glv_showSoftInput( GLView* view, int visible )
+{
+    ANativeActivity* activity = ((struct android_app*) view)->activity;
+#if 0
+    // This showSoftInput call does nothing...
+    ANativeActivity_showSoftInput( activity,
+            //ANATIVEACTIVITY_SHOW_SOFT_INPUT_IMPLICIT
+            ANATIVEACTIVITY_SHOW_SOFT_INPUT_FORCED
+            );
+#else
+    /* The NativeActivity must be extended with these methods:
+    public void showKeyboard()
+    {
+        InputMethodManager imm = (InputMethodManager)
+            getSystemService( Context.INPUT_METHOD_SERVICE );
+        imm.showSoftInput( this.getWindow().getDecorView(),
+            InputMethodManager.SHOW_FORCED );
+    }
+    public void hideKeyboard()
+    {
+        InputMethodManager imm = (InputMethodManager)
+            getSystemService( Context.INPUT_METHOD_SERVICE );
+        imm.hideSoftInputFromWindow(
+            this.getWindow().getDecorView().getWindowToken(), 0 );
+    }
+    */
+
+    JavaVMAttachArgs vmArgs;
+    const char* method;
+    jint result;
+
+    // Attach the current thread to the JVM.
+    JavaVM* pJavaVM = activity->vm;
+    JNIEnv* pEnv    = activity->env;
+
+    vmArgs.version = JNI_VERSION_1_6;
+    vmArgs.name    = "NativeThread";
+    vmArgs.group   = NULL;
+
+    result = (*pJavaVM)->AttachCurrentThread( pJavaVM, &pEnv, &vmArgs );
+    if( result != JNI_ERR )
+    {
+        // Retrieves NativeActivity.
+        jobject nativeActivity = activity->clazz;
+        jclass class = (*pEnv)->GetObjectClass( pEnv, nativeActivity );
+
+        method = visible ? "showKeyboard" : "hideKeyboard";
+        jmethodID mid = (*pEnv)->GetMethodID( pEnv, class, method, "()V" );
+        (*pEnv)->CallVoidMethod( pEnv, nativeActivity, mid );
+
+        // Finished with the JVM.
+        (*pJavaVM)->DetachCurrentThread( pJavaVM );
+    }
+#endif
+}

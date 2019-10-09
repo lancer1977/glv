@@ -133,6 +133,9 @@ extern int  glv_clipboardText( GLView* view,
                        void (*func)(const char* data, int len, void* user),
                        void* user );
 
+/* Android Only */
+extern void glv_showSoftInput( GLView* view, int visible );
+
 
 #ifdef __cplusplus
 }
