@@ -128,12 +128,12 @@ extern void glv_setEventHandler( GLView* view, GLViewEvent_f func );
 extern void glv_waitEvent( GLView* view );
 extern void glv_handleEvents( GLView* view );
 extern void glv_filterRepeatKeys( GLView* view, int on );
-extern int  glv_ascii();
 extern int  glv_clipboardText( GLView* view,
                        void (*func)(const char* data, int len, void* user),
                        void* user );
 
 /* Android Only */
+extern int  glv_ascii( const GLViewEvent* );
 extern void glv_showSoftInput( GLView* view, int visible );
 
 

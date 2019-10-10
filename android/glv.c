@@ -11,6 +11,7 @@
 #include <glv.h>
 #include <glv_activity.h>
 #include <EGL/eglext.h>         /* Defines EGL_OPENGL_ES3_BIT_KHR */
+#include <android/keycodes.h>
 
 
 #define FLAG_ATTRIB                 0x000f
@@ -393,12 +394,56 @@ void glv_filterRepeatKeys( GLView* view, int on )
 }
 
 
+static const char glv_asciiKeyMap[82] =
+{
+    0, 0, 0, 0,        0,  0,  0,'0',
+    '1','2','3','4', '5','6','7','8',
+    '9','*','#',  0,   0,  0,  0,  0,
+      0,  0,  0,  0,   0,'a','b','c',
+    'd','e','f','g', 'h','i','j','k',
+    'l','m','n','o', 'p','q','r','s',
+    't','u','v','w', 'x','y','z',',',
+    '.',  0,  0,  0,  0,'\t',' ',  0,
+      0, 0,'\n',127, '`','-','=','[',
+    ']','\\',';','\'', '/','@',  0,  0,
+      0,'+'
+};
+
+
+static const char glv_asciiKeyMapShift[82] =
+{
+    0, 0, 0, 0,        0,  0,  0,')',
+    '!','@','#','$', '%','^','&','*',
+    '(','*','#',  0,   0,  0,  0,  0,
+      0,  0,  0,  0,   0,'A','B','C',
+    'D','E','F','G', 'H','I','J','K',
+    'L','M','N','O', 'P','Q','R','S',
+    'T','U','V','W', 'X','Y','Z',',',
+    '.',  0,  0,  0,  0,'\t',' ',  0,
+      0, 0,'\n',127, '`','_','+','{',
+    '}','|',':','"', '?','@',  0,  0,
+      0,'+'
+};
+
+
 /*
   This function is private and may not exist on all platforms.
   Users should use the KEY_ASCII macro.
 */
-int glv_ascii()
+int glv_ascii( const GLViewEvent* ev )
 {
+    int code = ev->code;
+
+    // Basic implementation which avoids having to call Java code.
+
+    if( code < 82 )
+    {
+        if( ev->state & AMETA_SHIFT_ON )
+            return glv_asciiKeyMapShift[ code ];
+        return glv_asciiKeyMap[ code ];
+    }
+    if( code == AKEYCODE_ESCAPE )
+        return 27;
     return 0;
 }
 
