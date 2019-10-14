@@ -349,17 +349,35 @@ GLView* glv_create( int attributes )
     }
 #endif
 
-    if( attributes & GLV_ATTRIB_ES )
+#if defined(GLX_VERSION_1_4)
     {
-#if defined(GLX_VERSION_1_4) && defined(GLX_CONTEXT_ES_PROFILE_BIT_EXT)
-        /* Requires "GLX_EXT_create_context_es_profile" */
-        int ctxAttr[] =
+        int ctxAttr[ 10 ];
+        int* cp = ctxAttr;
+
+        if( attributes & GLV_ATTRIB_ES )
         {
-            GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-            GLX_CONTEXT_MINOR_VERSION_ARB, 2,
-            GLX_CONTEXT_PROFILE_MASK_ARB,  GLX_CONTEXT_ES_PROFILE_BIT_EXT,
-            None
-        };
+            /* Requires "GLX_EXT_create_context_es_profile" */
+#if defined(GLX_CONTEXT_ES_PROFILE_BIT_EXT)
+            *cp++ = GLX_CONTEXT_MAJOR_VERSION_ARB;
+            *cp++ = 3;
+            *cp++ = GLX_CONTEXT_MINOR_VERSION_ARB;
+            *cp++ = 2;
+            *cp++ = GLX_CONTEXT_PROFILE_MASK_ARB;
+            *cp++ = GLX_CONTEXT_ES_PROFILE_BIT_EXT;
+#else
+            fprintf(stderr, "libglv not compiled with GLV_ATTRIB_ES support\n");
+            goto fail_fb;
+#endif
+        }
+
+        if( attributes & GLV_ATTRIB_DEBUG )
+        {
+            *cp++ = GLX_CONTEXT_FLAGS_ARB;
+            *cp++ = GLX_CONTEXT_DEBUG_BIT_ARB;
+        }
+
+        *cp = None;
+
         PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB =
             (PFNGLXCREATECONTEXTATTRIBSARBPROC)
             glXGetProcAddress( (const GLubyte*) "glXCreateContextAttribsARB" );
@@ -372,24 +390,20 @@ GLView* glv_create( int attributes )
                                                 ctxAttr );
         if( ! view->ctx )
         {
-            fprintf( stderr, "Could not create ES 3.2 profile GLXContext\n" );
+            fprintf( stderr, "Could not create %sGLXContext\n",
+                     (attributes & GLV_ATTRIB_ES) ? "ES 3.2 profile " : "" );
             goto fail_fb;
         }
+    }
 #else
-        fprintf( stderr, "libglv not compiled with GLV_ATTRIB_ES support\n" );
-        goto fail_fb;
-#endif
-    }
-    else
+    view->ctx = glXCreateNewContext( disp, fbCfg[ci], GLX_RGBA_TYPE,
+                                     NULL, True );
+    if( ! view->ctx )
     {
-        view->ctx = glXCreateNewContext( disp, fbCfg[ci], GLX_RGBA_TYPE,
-                                         NULL, True );
-        if( ! view->ctx )
-        {
-            fprintf( stderr, "Could not create GLXContext\n" );
-            goto fail_fb;
-        }
+        fprintf( stderr, "Could not create GLXContext\n" );
+        goto fail_fb;
     }
+#endif
 
     {
         XSetWindowAttributes attr;

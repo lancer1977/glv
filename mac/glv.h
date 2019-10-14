@@ -70,6 +70,8 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_ATTRIB_DOUBLEBUFFER     1
 #define GLV_ATTRIB_STENCIL          2
 #define GLV_ATTRIB_MULTISAMPLE      4
+#define GLV_ATTRIB_ES               8
+#define GLV_ATTRIB_DEBUG            16
 
 #define GLV_MODEID_WINDOW   -1
 
