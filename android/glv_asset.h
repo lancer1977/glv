@@ -13,6 +13,7 @@ struct AssetFile
 };
 
 
+AAssetManager* glv_assetManager();
 int  glv_assetOpen( struct AssetFile*, const char* file, const char* mode );
 void glv_assetClose( struct AssetFile* );
 

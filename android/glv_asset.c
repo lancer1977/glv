@@ -10,6 +10,12 @@
 extern struct android_app* gGlvApp;
 
 
+AAssetManager* glv_assetManager()
+{
+    return gGlvApp ? gGlvApp->activity->assetManager : NULL;
+}
+
+
 /*
   Open Android package asset for FILE* access.
 
