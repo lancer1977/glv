@@ -342,6 +342,19 @@ void glv_setEventHandler( GLView* view, GLViewEvent_f func )
 */
 void glv_waitEvent( GLView* view )
 {
+    GLViewEvent ve;
+    struct android_poll_source* source;
+    int ident;
+    int events;
+
+    // NOTE: This implementation dispatches one event after waiting, so it
+    // does not exactly match the documented behavior.
+
+    if( (ident = ALooper_pollOnce(-1, NULL, &events, (void**)&source)) >= 0 )
+    {
+        if( source != NULL )
+            source->process( gGlvApp, source );
+    }
 }
 
 
@@ -371,7 +384,6 @@ void glv_handleEvents( GLView* view )
     struct android_poll_source* source;
     int ident;
     int events;
-
 
     while( (ident = ALooper_pollAll(0, NULL, &events, (void**)&source)) >= 0 )
     {
