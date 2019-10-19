@@ -401,6 +401,15 @@ void android_app_wait_state(struct android_app* app, int cmd) {
     }
 }
 */
+
+void android_app_wait_destroy(struct android_app* app) {
+    int cmd;
+    do {
+        cmd = android_app_read_cmd(app);
+        android_app_pre_exec_cmd(app, cmd);
+        android_app_post_exec_cmd(app, cmd);
+    } while( cmd != APP_CMD_DESTROY );
+}
 #endif
 
 static void* android_app_entry(void* param) {

@@ -322,6 +322,7 @@ enum {
 
 #ifdef GLV_H
 int android_app_wait_window(struct android_app* app);
+void android_app_wait_destroy(struct android_app* app);
 #endif
 
 /**
