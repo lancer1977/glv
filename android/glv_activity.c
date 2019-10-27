@@ -688,11 +688,12 @@ void glv_showSoftInput( GLView* view, int visible )
 
     JavaVMAttachArgs vmArgs;
     const char* method;
+    JavaVM* pJavaVM = activity->vm;
+    JNIEnv* pEnv;
     jint result;
 
-    // Attach the current thread to the JVM.
-    JavaVM* pJavaVM = activity->vm;
-    JNIEnv* pEnv    = activity->env;
+    // Attach the current thread to the JVM.  Can't use activity->env as
+    // glv_ calls will not be in the ANativeActivityCallbacks thread.
 
     vmArgs.version = JNI_VERSION_1_6;
     vmArgs.name    = "NativeThread";
@@ -701,13 +702,13 @@ void glv_showSoftInput( GLView* view, int visible )
     result = (*pJavaVM)->AttachCurrentThread( pJavaVM, &pEnv, &vmArgs );
     if( result != JNI_ERR )
     {
-        // Retrieves NativeActivity.
-        jobject nativeActivity = activity->clazz;
-        jclass class = (*pEnv)->GetObjectClass( pEnv, nativeActivity );
+        // Retrieve NativeActivity class.
+        // NOTE: activity->clazz is actually a jobject, not a jclass.
+        jclass class = (*pEnv)->GetObjectClass( pEnv, activity->clazz );
 
         method = visible ? "showKeyboard" : "hideKeyboard";
         jmethodID mid = (*pEnv)->GetMethodID( pEnv, class, method, "()V" );
-        (*pEnv)->CallVoidMethod( pEnv, nativeActivity, mid );
+        (*pEnv)->CallVoidMethod( pEnv, activity->clazz, mid );
 
         // Finished with the JVM.
         (*pJavaVM)->DetachCurrentThread( pJavaVM );
