@@ -40,7 +40,9 @@ void glv_initEGL( GLView* view, ANativeWindow* window )
         EGL_NONE
     };
     const EGLint ctxAttr[] = {
-        EGL_CONTEXT_CLIENT_VERSION, 3,
+        EGL_CONTEXT_MAJOR_VERSION_KHR, 3,
+        EGL_CONTEXT_MINOR_VERSION_KHR, 1,
+        //EGL_CONTEXT_FLAGS_KHR, EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR,
         EGL_NONE
     };
     EGLConfig config;
