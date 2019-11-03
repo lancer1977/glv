@@ -3,6 +3,19 @@
 #----------------------------------------------------------------------------
 
 
+#------ Install settings
+
+PREFIX ?= /usr/local
+
+# DESTDIR used for staged installs.
+ifeq ($(shell file -b /usr/lib64), directory)
+LIB_DIR      = $(DESTDIR)$(PREFIX)/lib64
+else
+LIB_DIR      = $(DESTDIR)$(PREFIX)/lib
+endif
+HEADER_DIR   = $(DESTDIR)$(PREFIX)/include/GL
+
+
 #------ Compiler and tools
 
 CC       = gcc
@@ -22,10 +35,6 @@ GLV_INCPATH  = -I.
 GLV_LFLAGS   = -shared
 GLV_LIBS     =
 GLV_OBJECTS  = glv.o
-PREFIX       = /usr/local
-# DESTDIR used for staged installs.
-LIB_DIR      = $(DESTDIR)$(PREFIX)/lib
-HEADER_DIR   = $(DESTDIR)$(PREFIX)/include/GL
 
 
 GLV_CFLAGS  += -DUSE_XF86VMODE
