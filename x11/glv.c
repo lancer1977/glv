@@ -259,10 +259,14 @@ static void glv_nullHandler( void* v, GLViewEvent* e )
   The possible attributes are GLV_ATTRIB_DOUBLEBUFFER, GLV_ATTRIB_STENCIL,
   and GLV_ATTRIB_MULTISAMPLE.  Only RGBA visuals will be created.
 
+  glVersion contains the OpenGL major version in bits 8-15 and the minor in
+  bits 0-7, so version 3.2 is 0x302.  If zero, no specific version is
+  requested.
+
   A valid view may be returned even if all attributes could not be set.
   Use glv_attributes() to check which are set.
 */
-GLView* glv_create( int attributes )
+GLView* glv_create( int attributes, int glVersion )
 {
     GLView* view;
     Display* disp;
@@ -358,16 +362,25 @@ GLView* glv_create( int attributes )
         {
             /* Requires "GLX_EXT_create_context_es_profile" */
 #if defined(GLX_CONTEXT_ES_PROFILE_BIT_EXT)
+            if( ! glVersion )
+                glVersion = 0x302;
             *cp++ = GLX_CONTEXT_MAJOR_VERSION_ARB;
-            *cp++ = 3;
+            *cp++ = glVersion >> 8;
             *cp++ = GLX_CONTEXT_MINOR_VERSION_ARB;
-            *cp++ = 2;
+            *cp++ = glVersion & 0xff;
             *cp++ = GLX_CONTEXT_PROFILE_MASK_ARB;
             *cp++ = GLX_CONTEXT_ES_PROFILE_BIT_EXT;
 #else
             fprintf(stderr, "libglv not compiled with GLV_ATTRIB_ES support\n");
             goto fail_fb;
 #endif
+        }
+        else if( glVersion )
+        {
+            *cp++ = GLX_CONTEXT_MAJOR_VERSION_ARB;
+            *cp++ = glVersion >> 8;
+            *cp++ = GLX_CONTEXT_MINOR_VERSION_ARB;
+            *cp++ = glVersion & 0xff;
         }
 
         if( attributes & GLV_ATTRIB_DEBUG )

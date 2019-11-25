@@ -480,7 +480,7 @@ static void disposeGL( GLView* view )
   A valid view may be returned even if all attributes could not be set.
   Use glv_attributes() to check which are set.
 */
-GLView* glv_create( int attributes )
+GLView* glv_create( int attributes, int glVersion )
 {
     GLView* view;
     EventHandlerRef ref;

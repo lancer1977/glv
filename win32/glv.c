@@ -295,7 +295,7 @@ static void _destroyWindow( GLView* view )
   If glv_create fails then no other glview function should be called
   (though it is safe to call glv_destroy).
 */
-GLView* glv_create( int attributes )
+GLView* glv_create( int attributes, int glVersion )
 {
     GLView* view;
     WNDCLASS wc;

@@ -110,7 +110,7 @@ extern "C" {
 
 extern int  glv_queryModes( GLViewMode_f func, void* );
 
-extern GLView* glv_create( int attributes );
+extern GLView* glv_create( int attributes, int glVersion );
 extern void glv_destroy( GLView* view );
 extern int  glv_attributes( GLView* view );
 extern int  glv_dpi( GLView* view );

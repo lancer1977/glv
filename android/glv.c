@@ -14,9 +14,8 @@
 #include <android/keycodes.h>
 
 
-#define FLAG_ATTRIB                 0x000f
-#define FLAG_FULLSCREEN_MODE        0x0010
-#define FLAG_FILTER_REPEAT          0x0020
+#define FLAG_ATTRIB                 0x00ff
+#define FLAG_FILTER_REPEAT          0x0100
 
 
 extern struct android_app* gGlvApp;
@@ -39,17 +38,27 @@ void glv_initEGL( GLView* view, ANativeWindow* window )
         EGL_RED_SIZE, 8,
         EGL_NONE
     };
-    const EGLint ctxAttr[] = {
-        EGL_CONTEXT_MAJOR_VERSION_KHR, 3,
-        EGL_CONTEXT_MINOR_VERSION_KHR, 1,
-        //EGL_CONTEXT_FLAGS_KHR, EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR,
-        EGL_NONE
-    };
+    EGLint ctxAttr[7];
     EGLConfig config;
     EGLDisplay disp;
     EGLint numConfigs;
     EGLint format;
     EGLint w, h;
+    EGLint* ap = ctxAttr;
+
+    if( ! view->glVersion )
+        view->glVersion = 0x301;
+
+    *ap++ = EGL_CONTEXT_MAJOR_VERSION_KHR;
+    *ap++ = view->glVersion >> 8;
+    *ap++ = EGL_CONTEXT_MINOR_VERSION_KHR;
+    *ap++ = view->glVersion & 0xff;
+    if( view->flags & GLV_ATTRIB_DEBUG )
+    {
+        *ap++ = EGL_CONTEXT_FLAGS_KHR;
+        *ap++ = EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR;
+    }
+    *ap = EGL_NONE;
 
     view->display = disp = eglGetDisplay( EGL_DEFAULT_DISPLAY );
 
@@ -104,7 +113,7 @@ void glv_freeEGL( GLView* view )
   A valid view may be returned even if all attributes could not be set.
   Use glv_attributes() to check which are set.
 */
-GLView* glv_create( int attributes )
+GLView* glv_create( int attributes, int glVersion )
 {
     GLView* view;
 
@@ -119,6 +128,7 @@ GLView* glv_create( int attributes )
     // Initialize non-zero members.
     view->appRef = 1;
     view->flags = attributes & FLAG_ATTRIB;
+    view->glVersion = glVersion;
     view->eventHandler = glv_nullHandler;
 
     if( ! android_app_wait_window( gGlvApp ) )
@@ -205,34 +215,7 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
 {
     (void) view;
     (void) mode;
-#if 0
-    int oldModeFS = (view->flags & FLAG_FULLSCREEN_MODE) ? 1 : 0;
-    int newModeFS = (mode->id != GLV_MODEID_WINDOW) ? 1 : 0;
-
-
-    /* Return if mode is current */
-
-    if( (oldModeFS == newModeFS) &&
-        (mode->width == view->width) &&
-        (mode->height == view->height) )
-    {
-        return 1;
-    }
-
-    /*
-    XSync( disp, True );
-    glXMakeCurrent( disp, window, view->ctx );
-    */
-
-    view->width  = attr.width;
-    view->height = attr.height;
-
-    ve.type = GLV_EVENT_RESIZE;
-    ve.x    = attr.width;
-    ve.y    = attr.height;
-    view->eventHandler( view, &ve );
-#endif
-    return 1;
+    return 0;
 }
 
 
