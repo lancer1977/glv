@@ -251,12 +251,32 @@ static void process_input(struct android_app* app, struct android_poll_source* s
 
             case AINPUT_EVENT_TYPE_MOTION:
             {
+                GLView* view = &app->view;
                 int32_t action = AMotionEvent_getAction( event );
                 size_t count = AMotionEvent_getPointerCount( event );
+                int state;
+
                 LOGV("motion action: 0x%X button-state: 0x%X pcount: %lu\n",
                         action, AMotionEvent_getButtonState(event), count);
 
-                // Only support single touch.
+                state = pinch_detect(&app->pinch, event);
+                if( state > GESTURE_STATE_NONE ) {
+                    float p1[2], p2[2];
+                    if( pinch_positions(&app->pinch, event, p1, p2) ) {
+                        //fprintf( stderr, "KR pinch %d %f,%f\n",
+                        //         state, p2[0]-p1[0], p2[1]-p1[1] );
+
+                        ve.type  = GLV_EVENT_PINCH;
+                        ve.code  = state;
+                        ve.state = 0;
+                        *((float*) &ve.x) = p2[0] - p1[0];
+                        *((float*) &ve.y) = p2[1] - p1[1];
+
+                        view->eventHandler( view, &ve );
+                    }
+                }
+
+                // Only support single touch for mouse emulation.
                 if( count > 1 )
                     break;
 
@@ -276,8 +296,6 @@ static void process_input(struct android_app* app, struct android_poll_source* s
                 }
 
                 if( type ) {
-                    GLView* view = &app->view;
-
                     ve.type  = type;
                     ve.code  = (type == GLV_EVENT_MOTION) ? 0 : GLV_BUTTON_LEFT;
                     ve.state = AMotionEvent_getButtonState( event ) << 4;
@@ -335,6 +353,7 @@ static void process_cmd(struct android_app* app, struct android_poll_source* sou
             break;
 
         case APP_CMD_GAINED_FOCUS:
+            pinch_init(&app->pinch);
             ve.type = GLV_EVENT_FOCUS_IN;
             goto dispatch;
 #if 0

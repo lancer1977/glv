@@ -83,6 +83,7 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_EVENT_FOCUS_OUT     10
 #define GLV_EVENT_EXPOSE        11
 #define GLV_EVENT_APP           12
+#define GLV_EVENT_PINCH         13
 #define GLV_EVENT_USER          32
 
 /* GLViewEvent code for GLV_EVENT_BUTTON_DOWN/UP events */
@@ -137,6 +138,7 @@ extern int  glv_clipboardText( GLView* view,
 /* Android Only */
 extern int  glv_ascii( const GLViewEvent* );
 extern void glv_showSoftInput( GLView* view, int visible );
+#define glv_eventPinch(ev)  ((float*) &(ev)->x)
 
 
 #ifdef __cplusplus

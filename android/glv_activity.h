@@ -22,6 +22,7 @@
 #include <pthread.h>
 #include <sched.h>
 #include <glv.h>
+#include <gesture.h>
 
 #include <android/configuration.h>
 #include <android/looper.h>
@@ -112,6 +113,7 @@ struct android_poll_source {
 struct android_app {
 #ifdef GLV_H
     GLView view;
+    PinchDetector pinch;
 #else
     // The application can place a pointer to its own state object
     // here if it likes.
