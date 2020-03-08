@@ -256,15 +256,16 @@ static void glv_nullHandler( void* v, GLViewEvent* e )
   If glv_create fails then no other GLV function should be called
   (though it is safe to call glv_destroy()).
 
-  The possible attributes are GLV_ATTRIB_DOUBLEBUFFER, GLV_ATTRIB_STENCIL,
-  and GLV_ATTRIB_MULTISAMPLE.  Only RGBA visuals will be created.
-
-  glVersion contains the OpenGL major version in bits 8-15 and the minor in
-  bits 0-7, so version 3.2 is 0x302.  If zero, no specific version is
-  requested.
-
   A valid view may be returned even if all attributes could not be set.
   Use glv_attributes() to check which are set.
+
+  \param attributes The possible attributes are GLV_ATTRIB_DOUBLEBUFFER,
+                    GLV_ATTRIB_STENCIL, GLV_ATTRIB_MULTISAMPLE, GLV_ATTRIB_ES,
+                    and GLV_ATTRIB_DEBUG.  Only RGBA visuals will be created.
+
+  \param glVersion  This contains the OpenGL major version in bits 8-15 and
+                    the minor in bits 0-7, so version 3.2 is 0x302.
+                    If zero, no specific version is requested.
 */
 GLView* glv_create( int attributes, int glVersion )
 {

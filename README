@@ -1,5 +1,5 @@
     GLV library
-    Version 0.3
+    Version 0.4
     Written by Karl Robillard
 
 
@@ -11,9 +11,9 @@ window or fullscreen display with an OpenGL context.  It was written for use
 in games and demos as an alternative to larger libraries such as GLUT, SDL,
 GLFW, PLIB, etc.  There are no thread, joystick, or timer wrappers here.
 
-The currently supported environments are Linux, Mac OS X and Windows.
+The currently supported environments are Android, Linux, and Windows.
 The Linux version is the most complete, while the Mac version is the least
-with no fullscreen support at the moment.
+as it has not been updated for Cocoa.
 
 Read the LICENSE file for terms of use.
 
@@ -24,7 +24,7 @@ HTML documentation is provided in the doc/html/ directory.
 Requirements
 ------------
 
-OpenGL.  The examples use the glu library.
+OpenGL.
 
 The X11 version is built with the XFree86 XF86VidMode extension by default.
 This can be disabled in the Makefile.  Code has been written for the
@@ -56,6 +56,11 @@ Windows
     > nmake
     > cd ..\examples
     > nmake -f Makefile.vc
+
+
+Android
+
+  Add the android source and header files to your project.
 
 
 Mac OS X
