@@ -18,12 +18,12 @@ LIBS	= -L../x11 -lglv -lGL
 DOC_OBJECTS			= obj/doc.o
 WINDOW_OBJECTS		= obj/window.o
 COMPLETE_OBJECTS	= obj/complete.o
-ES2_OBJECTS			= obj/es2.o
+ES_PROFILE_OBJECTS	= obj/es_profile.o
 
 
 #------ Build rules
 
-all: doc window complete es2
+all: doc window complete es_profile
 
 doc: $(DOC_OBJECTS)
 	$(LINK) -o $@ $(LFLAGS) $(DOC_OBJECTS) $(LIBS)
@@ -34,15 +34,15 @@ window: $(WINDOW_OBJECTS)
 complete: $(COMPLETE_OBJECTS)
 	$(LINK) -o $@ $(LFLAGS) $(COMPLETE_OBJECTS) $(LIBS)
 
-es2: $(ES2_OBJECTS)
-	$(LINK) -o $@ $(LFLAGS) $(ES2_OBJECTS) $(LIBS)
+es_profile: $(ES_PROFILE_OBJECTS)
+	$(LINK) -o $@ $(LFLAGS) $(ES_PROFILE_OBJECTS) $(LIBS)
 
 .PHONY: clean
 clean:
 	-rm -f doc $(DOC_OBJECTS)
 	-rm -f window $(WINDOW_OBJECTS)
 	-rm -f complete $(COMPLETE_OBJECTS)
-	-rm -f es2 $(ES2_OBJECTS)
+	-rm -f es_profile $(ES_PROFILE_OBJECTS)
 
 
 #------ Compile rules

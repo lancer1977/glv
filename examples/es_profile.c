@@ -202,7 +202,7 @@ int main()
 
     view = glv_create( GLV_ATTRIB_DOUBLEBUFFER |
                        GLV_ATTRIB_MULTISAMPLE |
-                       GLV_ATTRIB_ES );
+                       GLV_ATTRIB_ES, 0 );
     if( view )
     {
         printf( "GL_VERSION: %s\n", (char*) glGetString( GL_VERSION ) );

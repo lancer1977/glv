@@ -277,7 +277,7 @@ int main( int argc, char** argv )
     }
 
 
-    gView = glv_create( GLV_ATTRIB_DOUBLEBUFFER );
+    gView = glv_create( GLV_ATTRIB_DOUBLEBUFFER, 0 );
     if( ! gView )
         return( -1 );
 

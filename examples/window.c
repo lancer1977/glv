@@ -126,7 +126,7 @@ int main( int argc, char** argv )
     (void) argc;
     (void) argv;
 
-    view = glv_create( GLV_ATTRIB_DOUBLEBUFFER );
+    view = glv_create( GLV_ATTRIB_DOUBLEBUFFER, 0 );
     if( view )
     {
         printExtensions();

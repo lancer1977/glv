@@ -39,7 +39,7 @@ int main()
 
     glv_queryModes( pickMode, &mode );
 
-    view = glv_create( GLV_ATTRIB_DOUBLEBUFFER );
+    view = glv_create( GLV_ATTRIB_DOUBLEBUFFER, 0 );
     if( view )
     {
         view->user = &quit;
