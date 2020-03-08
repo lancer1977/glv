@@ -1,6 +1,14 @@
                               GLV Change Log
 
 
+v0.4.0 - 13 Jan 2020
+
+    * Add Android implementation.
+    * Change glv_create() function to accept GL version.
+    * Rename GLV_ATTRIB_ES2 as GLV_ATTRIB_ES.
+    * Add GLV_ATTRIB_DEBUG to create debug context.
+
+
 V0.3.2 - 26 Aug 2017
 
     * Add glv_dpi() function for X11 & Win32.

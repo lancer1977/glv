@@ -1,7 +1,7 @@
 # GNU Makefile
 
 
-ARCHIVE = libglv-0.3.2
+ARCHIVE = libglv-0.4.0
 
 DIST_FILES = \
 	LICENSE \

@@ -28,7 +28,7 @@ INSTALL  = install
 #------ Target settings
 
 VER_M        = 0
-VER_MM       = 0.3
+VER_MM       = 0.4
 GLV_TARGET   = libglv.so.$(VER_MM)
 GLV_CFLAGS   = -fPIC -Wall -W -Wno-unused-parameter -O3
 GLV_INCPATH  = -I.
