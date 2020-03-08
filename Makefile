@@ -8,6 +8,15 @@ DIST_FILES = \
 	README \
 	ChangeLog \
 	glv.spec \
+	android/gesture.c \
+	android/gesture.h \
+	android/glv_activity.c \
+	android/glv_activity.h \
+	android/glv_asset.c \
+	android/glv_asset.h \
+	android/glv.c \
+	android/glv.h \
+	android/glv_keys.h \
 	x11/glv.c \
 	x11/glv.h \
 	x11/glv_keys.h \
@@ -26,7 +35,7 @@ DIST_FILES = \
 	examples/keystr.h \
 	examples/complete.c \
 	examples/doc.c \
-	examples/es2.c \
+	examples/es_profile.c \
 	examples/window.c \
 	doc/html
 
