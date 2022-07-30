@@ -1,9 +1,7 @@
 /*===========================================================================/
 
-  $Id: window.c,v 1.9 2004/09/28 05:13:42 karl Exp $
-
   GLV Library
-  Copyright (C) 2003-2006  Karl Robillard
+  Copyright (C) 2003-2006,2022  Karl Robillard
 
   This example shows how to open a GLView in a desktop window.
   Press the escape key or click on the window close widget to exit.
@@ -18,7 +16,11 @@
 #include <glv_keys.h>
 
 
-int quit = 0;
+enum ActionFlags {
+    Quit           = 1,
+    ShowWindow     = 2,
+    ShowFullWindow = 4
+};
 
 
 void repaint( GLView* view )
@@ -54,6 +56,8 @@ void repaint( GLView* view )
 
 void eventHandler( GLView* view, GLViewEvent* event )
 {
+    int* actions = (int*) view->user;
+
     switch( event->type )
     {
         case GLV_EVENT_RESIZE:
@@ -82,12 +86,16 @@ void eventHandler( GLView* view, GLViewEvent* event )
 
         case GLV_EVENT_KEY_DOWN:
             if( event->code == KEY_Escape )
-                quit = 1;
+                *actions |= Quit;
+            else if( event->code == KEY_f )
+                *actions |= ShowFullWindow;
+            else if( event->code == KEY_w )
+                *actions |= ShowWindow;
             break;
 
         case GLV_EVENT_CLOSE:
             printf( "testClose\n" );
-            quit = 1;
+            *actions |= Quit;
             break;
     }
 }
@@ -122,9 +130,7 @@ int main( int argc, char** argv )
 {
     GLView* view;
     GLViewMode mode;
-
-    (void) argc;
-    (void) argv;
+    int actions = 0;
 
     view = glv_create( GLV_ATTRIB_DOUBLEBUFFER, 0 );
     if( view )
@@ -139,12 +145,26 @@ int main( int argc, char** argv )
         mode.width  = 640;
         mode.height = 480;
 
+        if( argc > 1 && strcmp(argv[1], "-f") == 0 )
+            mode.id = GLV_MODEID_FULL_WINDOW;
+
         glv_changeMode( view, &mode );
 
-        while( ! quit )
+        view->user = &actions;
+
+        while( ! (actions & Quit) )
         {
+            actions = 0;
             glv_waitEvent( view );
             glv_handleEvents( view );
+
+            if( actions & (ShowWindow|ShowFullWindow) )
+            {
+                mode.id = (actions & ShowWindow) ? GLV_MODEID_WINDOW :
+                                                   GLV_MODEID_FULL_WINDOW;
+                printf( "changeMode %d\n", mode.id );
+                glv_changeMode( view, &mode );
+            }
         }
 
         glv_destroy( view );

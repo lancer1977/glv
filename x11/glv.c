@@ -1,7 +1,7 @@
 /*===========================================================================/
 
   GLV Library for X11
-  Copyright (C) 2003-2006,2011,2012,2014  Karl Robillard
+  Copyright (C) 2003-2006,2011,2012,2014,2022  Karl Robillard
 
 /===========================================================================*/
 
@@ -99,15 +99,22 @@
 
 /**
   \def GLV_MODEID_WINDOW
-  A GLViewMode::id of GL_MODEID_WINDOW means the GLView is a window on
+  A GLViewMode::id of GLV_MODEID_WINDOW means the GLView is a window on
   the desktop rather than a fullscreen mode.
+*/
+
+/**
+  \def GLV_MODEID_FULL_WINDOW
+  A GLViewMode::id of GLV_MODEID_FULL_WINDOW will open a borderless window
+  that covers the entire desktop at its current resolution.
+  The mode width & height must still be set as a normal window fallback.
 */
 
 /**
   \var int GLViewMode::id
   Unique identifier for this mode.
-  An id of GLV_MODEID_WINDOW means the GLView is a window on
-  the desktop rather than a fullscreen mode.
+  An id of GLV_MODEID_WINDOW or GLV_MODEID_FULL_WINDOW means the GLView is a
+  window on the desktop rather than a fullscreen video mode.
 */
 
 /**
@@ -182,7 +189,8 @@
 
 #define FLAG_ATTRIB                 0x000f
 #define FLAG_FULLSCREEN_MODE        0x0010
-#define FLAG_FILTER_REPEAT          0x0020
+#define FLAG_FULLWINDOW_MODE        0x0020
+#define FLAG_FILTER_REPEAT          0x0040
 
 #define DEFAULT_INPUT   (KeyPressMask | KeyReleaseMask | \
                          ButtonPressMask | ButtonReleaseMask | \
@@ -239,6 +247,29 @@ static void _setFBAttr( int* attr, int glvFlags )
     */
 
     *attr = None;
+}
+
+
+typedef struct
+{
+    Atom type;
+    int  format;
+    unsigned long count;
+    unsigned long remain;
+    unsigned char* data;
+}
+Property;
+
+// Caller must call XFree(pr->data).
+static int getProperty(const GLView* view, Property* pr,
+                       Atom name, long long len, Atom reqType)
+{
+    pr->count = 0;
+    pr->data = NULL;
+    return XGetWindowProperty(view->display, view->window,
+                              name, 0, len, False, reqType,
+                              &pr->type, &pr->format, &pr->count, &pr->remain,
+                              &pr->data);
 }
 
 
@@ -665,12 +696,12 @@ int glv_queryModes( GLViewMode_f func, void* data )
 
 
 #if 0
-static void _map( Display* disp, Window win )
+static void _mapRaisedWait( Display* disp, Window win )
 {
     XWindowAttributes attr;
     XEvent event;
 
-    /* Ensure the window is mapped to prevent hang in loop below. */
+    /* Ensure the window is unmapped to prevent hang in loop below. */
     XGetWindowAttributes( disp, win, &attr );
     if( attr.map_state == IsViewable )
         return;
@@ -899,6 +930,114 @@ static void _changeVideoMode( GLView* view, const GLViewMode* mode )
 }
 
 
+#if 0
+static void _stateQuery(const GLView* view)
+{
+    Property prop;
+
+    getProperty(view, &prop, view->wmAtom[0], 8, XA_ATOM);
+    printf("WM_STATE type:%ld fmt:%d num:%ld rem:%ld data:%p\n",
+            prop.type, prop.format, prop.count, prop.remain, prop.data);
+
+    if (prop.count) {
+        char* name;
+        Atom* atoms = (Atom*) prop.data;
+        long unsigned int i;
+        for (i = 0; i < prop.count; ++i) {
+            name = XGetAtomName(view->display, atoms[i]);
+            printf("  atom %ld %s\n", atoms[i], name);
+            XFree(name);
+        }
+    }
+
+    XFree(prop.data);
+}
+#endif
+
+
+/*
+   \param action    0 = unset, 1 = set, 2 = toggle
+*/
+static int _stateFullscreen(GLView* view, int action, int setComposite)
+{
+    static const char* names[3] = {
+        "_NET_WM_STATE",
+        "_NET_WM_STATE_FULLSCREEN",
+        "_NET_WM_BYPASS_COMPOSITOR"
+    };
+    XEvent xev;
+    Atom wm_state;
+    Display* disp = view->display;
+
+
+    if (! view->wmAtom[0]) {
+        if (! XInternAtoms(disp, (char**) names, 3, True, view->wmAtom)) {
+            fprintf(stderr, "_NET_WM_STATE atoms do not exist\n");
+            return 0;
+        }
+    }
+    wm_state = view->wmAtom[0];
+
+
+    // Ensure the _NET_WM_STATE window property exists, or else sending the
+    // state change message will have no effect.  It won't exist on a new,
+    // unmapped window.
+    {
+    Property prop;
+    getProperty(view, &prop, wm_state, 4, XA_ATOM);
+    XFree(prop.data);
+
+    //printf("WM_STATE type:%ld fmt:%d num:%ld rem:%ld prop:%p\n",
+    //        type, format, count, remain, prop);
+
+    if (! prop.count) {
+        XChangeProperty(disp, view->window, wm_state, XA_ATOM, 32,
+                        PropModeReplace,
+                        (unsigned char*) (view->wmAtom + 1), 1);
+    }
+    }
+
+
+    xev.xclient.type    = ClientMessage;
+    xev.xclient.serial  = 0;
+    xev.xclient.send_event = True;
+    xev.xclient.window  = view->window;
+    xev.xclient.message_type = wm_state;
+    xev.xclient.format  = 32;
+
+    xev.xclient.data.l[0] = action;
+    xev.xclient.data.l[1] = view->wmAtom[1];    // _NET_WM_STATE_FULLSCREEN
+    xev.xclient.data.l[2] = 0;
+    xev.xclient.data.l[3] = 1;      // Normal application source.
+    xev.xclient.data.l[4] = 0;
+
+    XSendEvent(disp, RootWindow(disp, view->screen), False,
+               SubstructureRedirectMask | SubstructureNotifyMask,
+               &xev);
+
+    if (setComposite) {
+        // Set _NET_WM_BYPASS_COMPOSITOR property.
+        unsigned long bypass = (action == 1) ? 1 : 0;
+        XChangeProperty(disp, view->window, view->wmAtom[2], XA_CARDINAL, 32,
+                        PropModeReplace, (unsigned char*) &bypass, 1);
+    }
+
+    return 1;
+}
+
+
+static void _waitStructure(Display* disp, Window win, int etype)
+{
+    XEvent event;
+    while( 1 ) {
+        XWindowEvent( disp, win, StructureNotifyMask, &event );
+        //printf("KR waitStructure %d\n", event.type);
+        if( event.type == etype )
+            break;
+    }
+}
+
+
 /**
   Returns non-zero if successful.
   It must not be called from within an input handler function.
@@ -921,16 +1060,21 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
     Display* disp = view->display;
     Window window = view->window;
     int oldModeFS = (view->flags & FLAG_FULLSCREEN_MODE) ? 1 : 0;
-    int newModeFS = (mode->id != GLV_MODEID_WINDOW) ? 1 : 0;
+    int newModeFS = (mode->id > GLV_MODEID_WINDOW) ? 1 : 0;
+    int fullWindowTransition = 0;
 
 
     /* Return if mode is current */
 
-    if( (oldModeFS == newModeFS) &&
-        (mode->width == view->width) &&
-        (mode->height == view->height) )
+    if( oldModeFS == newModeFS )
     {
-        return( 1 );
+        if( mode->id == GLV_MODEID_FULL_WINDOW ) {
+            if( view->flags & FLAG_FULLWINDOW_MODE )
+                return 1;
+        } else {
+            if( mode->width == view->width && mode->height == view->height )
+                return 1;
+        }
     }
 
 
@@ -969,9 +1113,6 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
 
         /* NOTE: Must map after override_redirect has been set. */
         XMapRaised( disp, window );
-        //_map( disp, window );
-        //XMapWindow( disp, window );
-        //XSync( disp, True );
 
         XGrabKeyboard( disp, window, True,
                        GrabModeAsync, GrabModeAsync, CurrentTime );
@@ -1014,9 +1155,39 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
             XChangeWindowAttributes( disp, window, CWOverrideRedirect, &attr );
         }
 
-        XResizeWindow( disp, window, mode->width, mode->height );
+        if( mode->id == GLV_MODEID_FULL_WINDOW )
+        {
+#if 0
+            /* Ensure the window is resizable or some window managers may
+               not transition to the fullscreen state. */
+            XSizeHints* xsh = XAllocSizeHints();
+            if (xsh) {
+                xsh->flags = 0;
+                XSetWMNormalHints(disp, window, xsh);
+                XFree(xsh);
+            }
+#endif
 
-        //_map( disp, window );
+            /* Fallback to mode size if fullscreen fails. */
+            if (! view->width)
+                XResizeWindow( disp, window, mode->width, mode->height );
+
+            if (_stateFullscreen(view, 1, True)) {
+                view->flags |= FLAG_FULLWINDOW_MODE;
+                fullWindowTransition = 1;
+            }
+        }
+        else
+        {
+            if (view->flags & FLAG_FULLWINDOW_MODE) {
+                _stateFullscreen(view, 0, True);
+                view->flags &= ~FLAG_FULLWINDOW_MODE;
+                fullWindowTransition = 1;
+            }
+
+            XResizeWindow( disp, window, mode->width, mode->height );
+        }
+
         XMapRaised( disp, window );
     }
 
@@ -1032,19 +1203,25 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
     {
     GLViewEvent ve;
     XWindowAttributes attr;
-    XEvent event;
 
     XGetWindowAttributes( disp, window, &attr );
     if( attr.map_state != IsViewable )
     {
         /* Wait to be mapped or else the XCreateWindow size may be returned. */
-        while( 1 )
-        {
-            XWindowEvent( disp, window, StructureNotifyMask, &event );
-            if( event.type == MapNotify )
-                break;
-        }
-        XGetWindowAttributes( disp, window, &attr );
+        _waitStructure(disp, window, MapNotify);
+
+        /* The transition to _NET_WM_STATE_FULLSCREEN may take a moment
+           and a ConfigureNotify event with the previous size occurs
+           before the fullscreen size is set. */
+        if (fullWindowTransition)
+            _waitStructure(disp, window, ConfigureNotify);
+
+        XGetWindowAttributes(disp, window, &attr);
+    }
+    else if (fullWindowTransition)
+    {
+        _waitStructure(disp, window, ConfigureNotify);
+        XGetWindowAttributes(disp, window, &attr);
     }
 
     view->width  = attr.width;
@@ -1057,8 +1234,7 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
     }
 
     //_report( disp, window );
-
-    return( 1 );
+    return 1;
 }
 
 
@@ -1425,7 +1601,13 @@ void glv_handleEvents( GLView* view )
                 ve.type  = GLV_EVENT_EXPOSE;
                 view->eventHandler( view, &ve );
                 break;
-
+#if 0
+            case PropertyNotify:
+                if (event.xproperty.atom == view->wmAtom[0] &&
+                    event.xproperty.state == 0)
+                    _stateQuery(view);
+                break;
+#endif
             default:
                 /*unknownEvent( &event );*/
                 break;
@@ -1526,11 +1708,7 @@ int glv_clipboardText( GLView* view,
                         &nitems, &bytesLeft, &data );
     if( type == None )
         return 0;
-    if( data != NULL )
-    {
-        XFree( data );
-        data = NULL;
-    }
+    XFree( data );
     if( bytesLeft < 1 )
         return 0;
 

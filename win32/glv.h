@@ -68,7 +68,8 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_ATTRIB_ES               8
 #define GLV_ATTRIB_DEBUG            16
 
-#define GLV_MODEID_WINDOW   -1
+#define GLV_MODEID_WINDOW       -1
+#define GLV_MODEID_FULL_WINDOW  -2
 
 /* GLViewEvent type */
 #define GLV_EVENT_RESIZE        1
