@@ -98,7 +98,9 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_MASK_SHIFT      MK_SHIFT
 #define GLV_MASK_CTRL       MK_CONTROL
 #define GLV_MASK_ALT        0x20
+#define GLV_MASK_CMD        0
 #define GLV_MASK_CAPS       0
+#define GLV_MASK_NUM        0
 #define GLV_MASK_LEFT       MK_LBUTTON
 #define GLV_MASK_MIDDLE     MK_MBUTTON
 #define GLV_MASK_RIGHT      MK_RBUTTON
