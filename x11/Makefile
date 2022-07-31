@@ -30,12 +30,14 @@ INSTALL  = install
 VER_M        = 0
 VER_MM       = 0.4
 GLV_TARGET   = libglv.so.$(VER_MM)
-GLV_CFLAGS   = -fPIC -Wall -W -Wno-unused-parameter -O3
+GLV_CFLAGS   = -fPIC -Wall -W -Wno-unused-parameter
 GLV_INCPATH  = -I.
 GLV_LFLAGS   = -shared
 GLV_LIBS     =
 GLV_OBJECTS  = glv.o
 
+GLV_CFLAGS  += -O3 -DNDEBUG
+#GLV_CFLAGS  += -g -DDEBUG
 
 GLV_CFLAGS  += -DUSE_XF86VMODE
 GLV_LIBS    += -lXxf86vm
