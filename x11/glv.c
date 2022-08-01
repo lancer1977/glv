@@ -20,6 +20,10 @@
   \include doc.c
 
 
+  \example window.c
+  This shows how to use the window display modes.
+
+
   \struct GLView glv.h
   \brief The GLView struct defines a single window with an OpenGL context.
 
@@ -119,11 +123,11 @@
 */
 
 /**
-  \typedef void (*GLViewMode_f)( const GLViewMode*, void* )
+  \typedef GLViewMode_f
   Callback for glv_queryModes().
 
 
-  \typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* )
+  \typedef GLViewEvent_f
   Event callback for glv_handleEvents().
 */
 
