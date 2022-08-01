@@ -10,46 +10,43 @@
   \mainpage
 
   Start with the glv.h documentation.
-*/
 
 
-/**
+  \file glv.h
+  \brief The GLV library provides a small, cross-platform interface
+  for creating a window or fullscreen display with an OpenGL context.
+
+  Here is a short example of how to use GLV:
+  \include doc.c
+
+
   \struct GLView glv.h
-  \brief The GLView struct...
+  \brief The GLView struct defines a single window with an OpenGL context.
 
   All undocumented members are private and should not be accessed.
-*/
 
-/**
+
   \var void* GLView::user
   Unused by the GLV library.
-  This pointer can be used to attach data to a view (e.g. for use in event
+  This pointer can be used to attach data to a view (e.g. to use in event
   callback functions).
-*/
 
-/**
+
   \var int GLView::width
   Pixel width of the view.
-*/
 
-/**
+
   \var int GLView::height
   Pixel height of the view.
-*/
 
 
-/*--------------------------------------------------------------------------*/
-
-
-/**
   \struct GLViewEvent glv.h
   \brief The GLViewEvent struct is passed to the event handler callback.
 
   \sa GLViewEvent_f
   \sa glv_setEventHandler()
-*/
 
-/**
+
   \var int GLViewEvent::type
   Type of event.
   \code
@@ -66,31 +63,23 @@
     GLV_EVENT_EXPOSE
     GLV_EVENT_USER
   \endcode
-*/
 
-/**
+
   \var int GLViewEvent::code
   Key code for GLV_EVENT_KEY_DOWN/GLV_EVENT_KEY_UP events.
-*/
 
-/**
+
   \var int GLViewEvent::state
   Bit mask of key & button modifiers.
-*/
 
-/**
+
   \var int GLViewEvent::x
   Mouse pointer X position. Width for GLV_EVENT_RESIZE events.
-*/
 
-/**
+
   \var int GLViewEvent::y
   Mouse pointer Y position. Height for GLV_EVENT_RESIZE events.
 */
-
-
-/*--------------------------------------------------------------------------*/
-
 
 /**
   \struct GLViewMode glv.h
@@ -129,37 +118,13 @@
   Bits per pixel (8, 16, 32, etc.).
 */
 
-
-/*--------------------------------------------------------------------------*/
-
-
 /**
   \typedef void (*GLViewMode_f)( const GLViewMode*, void* )
   Callback for glv_queryModes().
-*/
 
-/**
+
   \typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* )
   Event callback for glv_handleEvents().
-*/
-
-
-/*--------------------------------------------------------------------------*/
-
-
-/**
-  \file glv.h
-  \brief The GLV library provides a small, cross-platform interface 
-  for creating a window or fullscreen display with an OpenGL context.
-
-  Here is a short example of how to use GLV:
-  \include doc.c
-*/
-
-
-/**
-  \struct GLViewMode glv.h
-  \brief The GLViewMode struct...
 */
 
 
@@ -173,10 +138,6 @@
 
 #ifdef USE_XF86VMODE
 #include <X11/extensions/xf86vmode.h>
-#endif
-
-#ifdef USE_XME
-#include <X11/extensions/xme.h>
 #endif
 
 
@@ -305,7 +266,7 @@ GLView* glv_create( int attributes, int glVersion )
     if( ! disp )
     {
         fprintf( stderr, "XOpenDisplay failed!\n" );
-        return( 0 );
+        return 0;
     }
 
     if( glXQueryExtension( disp, 0, 0 ) == 0 )
@@ -476,7 +437,7 @@ GLView* glv_create( int attributes, int glVersion )
     XSetWMProtocols( disp, view->window, &view->deleteAtom, 1 );
 
     glv_makeCurrent( view );
-    return( view );
+    return view;
 
 fail_fb:
     XFree( fbCfg );
@@ -484,7 +445,7 @@ fail_view:
     free( view );
 fail_disp:
     XCloseDisplay( disp );
-    return( 0 );
+    return 0;
 }
 
 
@@ -499,12 +460,6 @@ static void _restoreVideo( GLView* view )
             XF86VidModeModeInfo* vm = (XF86VidModeModeInfo*) view->omode;
             XF86VidModeLockModeSwitch( view->display, view->screen, False );
             XF86VidModeSwitchToMode( view->display, view->screen, vm );
-#endif
-
-#ifdef USE_XME
-            XiGMiscResolutionInfo* vm = (XiGMiscResolutionInfo*) view->omode;
-            XiGMiscChangeResolution( view->display, view->screen, 0,
-                                     vm->width, vm->height, 0 );
 #endif
         }
 
@@ -606,7 +561,7 @@ int glv_queryModes( GLViewMode_f func, void* data )
 
     disp = XOpenDisplay( 0 );
     if( ! disp )
-        return( 0 );
+        return 0;
 
     screen = DefaultScreen( disp );
 
@@ -653,38 +608,9 @@ int glv_queryModes( GLViewMode_f func, void* data )
     }
 #endif
 
-
-#ifdef USE_XME
-    {
-    int major, minor;
-
-    if( XiGMiscQueryVersion( disp, &major, &minor ) && (major >= 2) )
-    {
-        XiGMiscResolutionInfo* modelist;
-        int active;
-        int i;
-
-        modeCount = XiGMiscQueryResolutions( disp, screen,
-                                             0, &active, &modelist );
-
-        for( i = 0; i < modeCount; ++i )
-        {
-            vmode.id          = i;
-            vmode.width       = modelist[i].width;
-            vmode.height      = modelist[i].height;
-            vmode.refreshRate = modelist[i].refresh;
-
-            (*func)( &vmode, data );
-        }
-
-        XFree( modelist );
-    }
-    }
-#endif
-
     XCloseDisplay( disp );
 
-    return( modeCount );
+    return modeCount;
 }
 
 
@@ -886,40 +812,6 @@ static void _changeVideoMode( GLView* view, const GLViewMode* mode )
         XFree( modelist );
     }
 #endif
-
-#ifdef USE_XME
-    int major, minor;
-
-    if( XiGMiscQueryVersion( view->display, &major, &minor ) && (major >= 2) )
-    {
-        if( ! view->omode )
-        {
-            /* Save original desktop mode */
-
-            XiGMiscResolutionInfo* info;
-
-            info = (XiGMiscResolutionInfo*)
-                   malloc( sizeof(XiGMiscResolutionInfo) );
-            if( info )
-            {
-                XiGMiscResolutionInfo* modelist;
-                int active;
-
-                XiGMiscQueryResolutions( view->display, view->screen,
-                                         0, &active, &modelist );
-
-                *info = modelist[ active ];
-                view->omode = info;
-
-                XFree( modelist );
-            }
-        }
-
-        XiGMiscChangeResolution( view->display, view->screen, 0,
-                                 mode->width,
-                                 mode->height, 0 );
-    }
-#endif
 }
 
 
@@ -1104,7 +996,7 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
     }
 
 
-#if defined(USE_XF86VMODE) || defined(USE_XME)
+#ifdef USE_XF86VMODE
     if( newModeFS )
     {
         /* Change to fullscreen mode. */
