@@ -38,10 +38,12 @@
 
   \var int GLView::width
   Pixel width of the view.
+  This is a read-only value that should never be directly set by the user.
 
 
   \var int GLView::height
   Pixel height of the view.
+  This is a read-only value that should never be directly set by the user.
 
 
   \struct GLViewEvent glv.h
@@ -70,19 +72,21 @@
 
 
   \var int GLViewEvent::code
-  Key code for GLV_EVENT_KEY_DOWN/GLV_EVENT_KEY_UP events.
+  Key code for GLV_EVENT_KEY_* events.
 
 
   \var int GLViewEvent::state
-  Bit mask of key & button modifiers.
+  Bit mask of key & button modifiers for GLV_EVENT_KEY_* events.
 
 
   \var int GLViewEvent::x
-  Mouse pointer X position. Width for GLV_EVENT_RESIZE events.
+  Mouse pointer X position for GLV_EVENT_BUTTON_* & GLV_EVENT_MOTION events.
+  Width for GLV_EVENT_RESIZE events.
 
 
   \var int GLViewEvent::y
-  Mouse pointer Y position. Height for GLV_EVENT_RESIZE events.
+  Mouse pointer Y position for GLV_EVENT_BUTTON_* & GLV_EVENT_MOTION events.
+  Height for GLV_EVENT_RESIZE events.
 */
 
 /**
@@ -1215,7 +1219,8 @@ void glv_setTitle( GLView* view, const char* title )
 
 /**
   Positions window on screen.
-  Should only be called when in windowed mode.
+  This should only be called when the view was created with #GLV_MODEID_WINDOW
+  or #GLV_MODEID_FIXED_WINDOW.
 */
 void glv_move( GLView* view, int x, int y )
 {
@@ -1225,7 +1230,7 @@ void glv_move( GLView* view, int x, int y )
 
 /**
   Sets window dimensions.
-  Should only be called when in windowed mode.
+  This should only be called when the view was created with #GLV_MODEID_WINDOW.
 */
 void glv_resize( GLView* view, int w, int h )
 {
