@@ -140,6 +140,9 @@ extern int  glv_clipboardText( GLView* view,
                        void (*func)(const char* data, int len, void* user),
                        void* user );
 
+/* X11 Only */
+extern int  glv_setIcon( GLView* view, const long* image );
+
 
 #ifdef __cplusplus
 }

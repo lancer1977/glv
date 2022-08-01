@@ -1676,4 +1676,28 @@ int glv_clipboardText( GLView* view,
 }
 
 
+/**
+  Set application icon for the X11 window manager.
+
+  \param image  Width & height followed by ARGB pixel data.
+                If NULL then the icon will be deleted.
+
+  \return Non-zero if icon was accepted.
+*/
+int glv_setIcon( GLView* view, const long* image )
+{
+    Display* disp = view->display;
+    Atom wm_icon = XInternAtom(disp, "_NET_WM_ICON", False);
+    if (image) {
+        // TODO: Use XSetErrorHandler() to see if this succeeds.
+        XChangeProperty(disp, view->window, wm_icon, XA_CARDINAL, 32,
+                        PropModeReplace, (unsigned char*) image,
+                        2 + (image[0] * image[1]));
+    } else {
+        XDeleteProperty(disp, view->window, wm_icon);
+    }
+    return 1;
+}
+
+
 /*EOF*/
