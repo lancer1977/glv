@@ -1620,9 +1620,11 @@ void glv_handleEvents( GLView* view )
                 break;
 
             case Expose:
-                /* event.xexpose */
-                ve.type  = GLV_EVENT_EXPOSE;
-                view->eventHandler( view, &ve );
+                if( event.xexpose.count == 0 )
+                {
+                    ve.type = GLV_EVENT_EXPOSE;
+                    view->eventHandler( view, &ve );
+                }
                 break;
 #if 0
             case PropertyNotify:
