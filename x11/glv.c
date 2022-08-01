@@ -561,6 +561,7 @@ int glv_dpi( GLView* view )
 */
 int glv_queryModes( GLViewMode_f func, void* data )
 {
+#ifdef USE_XF86VMODE
     GLViewMode vmode;
     Display* disp;
     int screen;
@@ -579,8 +580,6 @@ int glv_queryModes( GLViewMode_f func, void* data )
     /* X11 cannot change depth on the fly(?) */
     vmode.depth = XDisplayPlanes( disp, screen );
 
-
-#ifdef USE_XF86VMODE
     {
     XF86VidModeModeInfo** modelist;
     int eventBase;
@@ -614,11 +613,13 @@ int glv_queryModes( GLViewMode_f func, void* data )
         XFree( modelist );
     }
     }
-#endif
 
     XCloseDisplay( disp );
 
     return modeCount;
+#else
+    return 0;
+#endif
 }
 
 
@@ -647,6 +648,7 @@ static void _mapRaisedWait( Display* disp, Window win )
 #endif
 
 
+#ifdef USE_XF86VMODE
 /*
   Properly unmap
 */
@@ -725,6 +727,7 @@ static void _withdraw( Display* disp, Window win, int screen )
     /* Clear event queue to eliminate bastard ConfigureNotify events. */
     //XSync( disp, True );
 }
+#endif
 
 
 #if 0
@@ -758,13 +761,13 @@ static void _report( Display* disp, Window win )
 #endif
 
 
+#ifdef USE_XF86VMODE
 /*
   Determine current mode so it can be restored later.
   Caller must free() the returned pointer .
 */
 static void _changeVideoMode( GLView* view, const GLViewMode* mode )
 {
-#ifdef USE_XF86VMODE
     int eventBase;
     int errorBase;
     Display* disp = view->display;
@@ -819,8 +822,8 @@ static void _changeVideoMode( GLView* view, const GLViewMode* mode )
 
         XFree( modelist );
     }
-#endif
 }
+#endif
 
 
 #if 0
