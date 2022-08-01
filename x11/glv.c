@@ -171,6 +171,7 @@
 */
 
 
+#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <glv.h>
@@ -1026,14 +1027,36 @@ static int _stateFullscreen(GLView* view, int action, int setComposite)
 }
 
 
-static void _waitStructure(Display* disp, Window win, int etype)
+/*
+  Wait for a specific type of XEvent.  The event is discarded.
+
+  \param timeout    Milliseconds to wait.
+
+  \return Non-zero if the event occured before the timeout period.
+*/
+static int _waitXEvent(Display* disp, int etype, int timeout)
 {
     XEvent event;
-    while( 1 ) {
-        XWindowEvent( disp, win, StructureNotifyMask, &event );
-        //printf("KR waitStructure %d\n", event.type);
-        if( event.type == etype )
-            break;
+    struct pollfd pread;
+
+    pread.fd = ConnectionNumber(disp);
+    pread.events = POLLIN;
+
+    while (1) {
+        int n = poll(&pread, 1, timeout);
+        if (n < 0) {
+            fprintf(stderr, "X11 socket wait failed!\n");
+            return 0;
+        }
+        if (n == 0)
+            return 0;       // Timed out.
+
+        while (XPending(disp)) {
+            XNextEvent(disp, &event);
+            //printf("KR waitXEvent %d\n", event.type);
+            if (event.type == etype)
+                return 1;
+        }
     }
 }
 
@@ -1208,19 +1231,19 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
     if( attr.map_state != IsViewable )
     {
         /* Wait to be mapped or else the XCreateWindow size may be returned. */
-        _waitStructure(disp, window, MapNotify);
+        _waitXEvent(disp, MapNotify, 500);
 
         /* The transition to _NET_WM_STATE_FULLSCREEN may take a moment
-           and a ConfigureNotify event with the previous size occurs
+           and a ConfigureNotify event with the previous size may occur
            before the fullscreen size is set. */
         if (fullWindowTransition)
-            _waitStructure(disp, window, ConfigureNotify);
+            _waitXEvent(disp, ConfigureNotify, 330);
 
         XGetWindowAttributes(disp, window, &attr);
     }
     else if (fullWindowTransition)
     {
-        _waitStructure(disp, window, ConfigureNotify);
+        _waitXEvent(disp, ConfigureNotify, 330);
         XGetWindowAttributes(disp, window, &attr);
     }
 
