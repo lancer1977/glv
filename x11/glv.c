@@ -95,44 +95,36 @@
 /**
   \struct GLViewMode glv.h
   \brief The GLViewMode struct holds information about a video mode.
-*/
 
-/**
   \def GLV_MODEID_WINDOW
   A GLViewMode::id of GLV_MODEID_WINDOW means the GLView is a window on
   the desktop rather than a fullscreen mode.
-*/
 
-/**
   \def GLV_MODEID_FULL_WINDOW
   A GLViewMode::id of GLV_MODEID_FULL_WINDOW will open a borderless window
   that covers the entire desktop at its current resolution.
   The mode width & height must still be set as a normal window fallback.
-*/
 
-/**
+  \def GLV_MODEID_FIXED_WINDOW
+  A GLViewMode::id of GLV_MODEID_FIXED_WINDOW opens a window on the desktop
+  with a fixed size.  The window cannot be resized by the user but is
+  otherwise the same as #GLV_MODEID_WINDOW.
+
   \var int GLViewMode::id
   Unique identifier for this mode.
-  An id of GLV_MODEID_WINDOW or GLV_MODEID_FULL_WINDOW means the GLView is a
-  window on the desktop rather than a fullscreen video mode.
-*/
+  An id of #GLV_MODEID_WINDOW, #GLV_MODEID_FULL_WINDOW, or
+  #GLV_MODEID_FIXED_WINDOW means the GLView is a window on the desktop rather
+  than a fullscreen video mode.
 
-/**
   \var int GLViewMode::width
   Pixel width of screen or window.
-*/
 
-/**
   \var int GLViewMode::height
   Pixel height of screen or window.
-*/
 
-/**
   \var int GLViewMode::refreshRate
   Vertical refresh rate in Hz (60, 85, etc.).
-*/
 
-/**
   \var int GLViewMode::depth
   Bits per pixel (8, 16, 32, etc.).
 */
@@ -956,6 +948,17 @@ static void _stateQuery(const GLView* view)
 #endif
 
 
+static void _resetSizeHints(GLView* view)
+{
+    XSizeHints* xsh = XAllocSizeHints();
+    if (xsh) {
+        xsh->flags = 0;
+        XSetWMNormalHints(view->display, view->window, xsh);
+        XFree(xsh);
+    }
+}
+
+
 /*
    \param action    0 = unset, 1 = set, 2 = toggle
 */
@@ -1180,16 +1183,9 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
 
         if( mode->id == GLV_MODEID_FULL_WINDOW )
         {
-#if 0
             /* Ensure the window is resizable or some window managers may
                not transition to the fullscreen state. */
-            XSizeHints* xsh = XAllocSizeHints();
-            if (xsh) {
-                xsh->flags = 0;
-                XSetWMNormalHints(disp, window, xsh);
-                XFree(xsh);
-            }
-#endif
+            _resetSizeHints(view);
 
             /* Fallback to mode size if fullscreen fails. */
             if (! view->width)
@@ -1207,6 +1203,18 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
                 view->flags &= ~FLAG_FULLWINDOW_MODE;
                 fullWindowTransition = 1;
             }
+
+            if( mode->id == GLV_MODEID_FIXED_WINDOW ) {
+                XSizeHints* xsh = XAllocSizeHints();
+                if (xsh) {
+                    xsh->flags = PMinSize | PMaxSize;
+                    xsh->min_width  = xsh->max_width  = mode->width;
+                    xsh->min_height = xsh->max_height = mode->height;
+                    XSetWMNormalHints(disp, window, xsh);
+                    XFree(xsh);
+                }
+            } else
+                _resetSizeHints(view);
 
             XResizeWindow( disp, window, mode->width, mode->height );
         }

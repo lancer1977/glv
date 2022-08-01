@@ -145,8 +145,13 @@ int main( int argc, char** argv )
         mode.width  = 640;
         mode.height = 480;
 
-        if( argc > 1 && strcmp(argv[1], "-f") == 0 )
-            mode.id = GLV_MODEID_FULL_WINDOW;
+        if( argc > 1 )
+        {
+            if( strcmp(argv[1], "-f") == 0 )
+                mode.id = GLV_MODEID_FULL_WINDOW;
+            else if( strcmp(argv[1], "-u") == 0 )
+                mode.id = GLV_MODEID_FIXED_WINDOW;
+        }
 
         glv_changeMode( view, &mode );
 
