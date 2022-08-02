@@ -154,11 +154,15 @@
 #define FLAG_FULLWINDOW_MODE        0x0020
 #define FLAG_FILTER_REPEAT          0x0040
 
-#define DEFAULT_INPUT   (KeyPressMask | KeyReleaseMask | \
-                         ButtonPressMask | ButtonReleaseMask | \
-                         PointerMotionMask | \
-                         ExposureMask | StructureNotifyMask | \
-                         PropertyChangeMask)
+#define EMASK_KEY       KeyPressMask | KeyReleaseMask
+#define EMASK_MOUSE     ButtonPressMask | ButtonReleaseMask | PointerMotionMask
+#ifdef USE_XF86VMODE
+#define EMASK_OTHER     ExposureMask | StructureNotifyMask | PropertyChangeMask
+#else
+#define EMASK_OTHER     ExposureMask | StructureNotifyMask
+#endif
+
+#define DEFAULT_EVENT_MASK  (EMASK_KEY | EMASK_MOUSE | EMASK_OTHER)
 
 #define FB_ATTR_SIZE    20
 
@@ -424,7 +428,7 @@ GLView* glv_create( int attributes, int glVersion )
 
         /* GLX requires a colormap (see the glXIntro man page). */
 
-        attr.event_mask   = DEFAULT_INPUT;
+        attr.event_mask   = DEFAULT_EVENT_MASK;
         attr.border_pixel = BlackPixel( disp, vi->screen );
         attr.colormap = XCreateColormap( disp,
                                          RootWindow( disp, vi->screen ),
@@ -670,9 +674,6 @@ static void _withdraw( Display* disp, Window win, int screen )
     while( 1 )
     {
         XNextEvent( disp, &event );
-        //XWindowEvent( disp, win,
-        //XMaskEvent( disp,
-        //            StructureNotifyMask | PropertyChangeMask, &event );
 
         if( event.type == PropertyNotify )
         {
@@ -1393,10 +1394,6 @@ void glv_handleEvents( GLView* view )
     */
 
     while( XPending( view->display ) )
-        /*
-    while( (XCheckWindowEvent( view->display, view->window,
-                               DEFAULT_INPUT, &event ) == True) )
-       */
     {
         XNextEvent( view->display, &event );
 
