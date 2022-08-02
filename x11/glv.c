@@ -935,16 +935,20 @@ static int _stateFullscreen(GLView* view, int action, int setComposite)
 
 
 /*
-  Wait for a specific type of XEvent.  The event is discarded.
+  Wait to be mapped and for a specific number of configure events.
 
   \param timeout    Milliseconds to wait.
 
-  \return Non-zero if the event occured before the timeout period.
+  \return Number of ConfigureNotify events recieved before timeout.
 */
-static int _waitXEvent(Display* disp, int etype, int timeout)
+static int _waitMapConfigure(GLView* view, int configureCount, int timeout)
 {
     XEvent event;
     struct pollfd pread;
+    Display* disp = view->display;
+    int fifth = timeout / 5;
+    int mapped = 0;
+    int configured = 0;
 
     pread.fd = ConnectionNumber(disp);
     pread.events = POLLIN;
@@ -956,14 +960,30 @@ static int _waitXEvent(Display* disp, int etype, int timeout)
             return 0;
         }
         if (n == 0)
-            return 0;       // Timed out.
+            return configured;      // Timed out.
 
         while (XPending(disp)) {
             XNextEvent(disp, &event);
             //printf("KR waitXEvent %d\n", event.type);
-            if (event.type == etype)
-                return 1;
+
+            if (event.type == MapNotify) {
+                ++mapped;
+            } else if (event.type == ConfigureNotify) {
+                if (event.xconfigure.window == view->window) {
+                    view->width  = event.xconfigure.width;
+                    view->height = event.xconfigure.height;
+                    //printf("KR conf %d,%d\n", view->width, view->height);
+                    ++configured;
+                }
+            }
+
+            if (mapped && configured >= configureCount)
+                return configured;
         }
+
+        timeout -= fifth;
+        if (timeout < fifth)
+            timeout = fifth;
     }
 }
 
@@ -1131,40 +1151,34 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
     glXMakeCurrent( disp, window, view->ctx );
 
 
-    /* Generate GLV_EVENT_RESIZE
-     * The geometry is queried (rather than assuming the requested size is
-     * used) just to be safe.
+    /* Generate a single GLV_EVENT_RESIZE.
+     *
+     * For a normal window we wait to be mapped or else the XCreateWindow size
+     * may be returned.
+     *
+     * This is more complicated when setting _NET_WM_STATE_FULLSCREEN as
+     * a ConfigureNotify event with the previous size may occur before the
+     * fullscreen size is set.  More events can occur if the transition is
+     * animated.
      */
     {
     GLViewEvent ve;
-    XWindowAttributes attr;
+    int confCount = fullWindowTransition ? 2 : 1;
 
-    XGetWindowAttributes( disp, window, &attr );
-    if( attr.map_state != IsViewable )
-    {
-        /* Wait to be mapped or else the XCreateWindow size may be returned. */
-        _waitXEvent(disp, MapNotify, 500);
+    confCount = _waitMapConfigure(view, confCount, 200);
+    //printf("KR confCount %d\n", confCount);
 
-        /* The transition to _NET_WM_STATE_FULLSCREEN may take a moment
-           and a ConfigureNotify event with the previous size may occur
-           before the fullscreen size is set. */
-        if (fullWindowTransition)
-            _waitXEvent(disp, ConfigureNotify, 330);
-
+    /* If no configure events arrive, just go with the current size. */
+    if (! confCount) {
+        XWindowAttributes attr;
         XGetWindowAttributes(disp, window, &attr);
+        view->width  = attr.width;
+        view->height = attr.height;
     }
-    else if (fullWindowTransition)
-    {
-        _waitXEvent(disp, ConfigureNotify, 330);
-        XGetWindowAttributes(disp, window, &attr);
-    }
-
-    view->width  = attr.width;
-    view->height = attr.height;
 
     ve.type = GLV_EVENT_RESIZE;
-    ve.x    = attr.width;
-    ve.y    = attr.height;
+    ve.x    = view->width;
+    ve.y    = view->height;
     view->eventHandler( view, &ve );
     }
 
