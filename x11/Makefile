@@ -39,6 +39,9 @@ GLV_OBJECTS  = glv.o
 GLV_CFLAGS  += -O3 -DNDEBUG
 #GLV_CFLAGS  += -g -DDEBUG
 
+GLV_CFLAGS  += -DUSE_CURSORS
+GLV_LIBS    += -lXcursor
+
 GLV_CFLAGS  += -DUSE_XF86VMODE
 GLV_LIBS    += -lXxf86vm
 # GLV_LIBS    += -L/usr/X11R6/lib

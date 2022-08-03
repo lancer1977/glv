@@ -239,6 +239,91 @@ static int getProperty(const GLView* view, Property* pr,
 }
 
 
+#ifdef USE_CURSORS
+#include <X11/Xcursor/Xcursor.h>
+
+static void glv_freeCustomCursors( GLView* view )
+{
+    Cursor* it  = view->customCursor;
+    Cursor* end = it + view->cursorCount;
+    while (it != end)
+        XFreeCursor(view->display, *it++);
+}
+
+/**
+  Define a set of cursors.
+
+  \param areas          Area within the pixels data for each cursor.
+                        Each cursor has these six values:
+                            x, y, width, height, hotx, hoty
+                        The hotspot is relative to x, y.
+  \param count          Number of cursors in areas array.
+  \param pixels         32-bit RGBA or ARGB values.
+  \param pixelsWidth    Width of image stored in pixels.
+  \param argb           Pixel color channel format (0 = RGBA, 1 = ARGB)
+*/
+int glv_loadCursors( GLView* view, const short* areas, int count,
+                     const unsigned char* pixels, int pixelsWidth, int argb )
+{
+    XcursorImage* cimg;
+    XcursorPixel* cp;
+    const unsigned char* srcRow;
+    const unsigned char* sp;
+    unsigned int x, y;
+    int i;
+
+    if (view->cursorCount)
+        glv_freeCustomCursors(view);
+
+    view->customCursor = realloc(view->customCursor, count*sizeof(Cursor));
+    view->cursorCount = count;
+
+    pixelsWidth *= 4;
+
+    for (i = 0; i < count; ++i) {
+        cimg = XcursorImageCreate(areas[2], areas[3]);
+        cimg->xhot = areas[4];
+        cimg->yhot = areas[5];
+
+        cp = cimg->pixels;
+        srcRow = pixels + (pixelsWidth * areas[1]) + (areas[0] * 4);
+
+        for (y = 0; y < cimg->height; ++y) {
+            sp = srcRow;
+            if (argb) {
+                for (x = 0; x < cimg->width; ++x, sp += 4)
+                    *cp++ = (XcursorPixel) sp[0] << 24 |
+                            (XcursorPixel) sp[1] << 16 |
+                            (XcursorPixel) sp[2] <<  8 | sp[3];
+            } else {
+                for (x = 0; x < cimg->width; ++x, sp += 4)
+                    *cp++ = (XcursorPixel) sp[3] << 24 |
+                            (XcursorPixel) sp[0] << 16 |
+                            (XcursorPixel) sp[1] <<  8 | sp[2];
+            }
+            srcRow += pixelsWidth;
+        }
+
+        view->customCursor[i] = XcursorImageLoadCursor(view->display, cimg);
+        XcursorImageDestroy(cimg);
+        areas += 6;
+    }
+    return 1;
+}
+
+/**
+  Show one of the cursors defined by glv_loadCursors().
+*/
+void glv_setCursor( GLView* view, int cursorIndex )
+{
+    if (cursorIndex < view->cursorCount) {
+        XDefineCursor(view->display, view->window,
+                      view->customCursor[cursorIndex]);
+    }
+}
+#endif
+
+
 static void glv_nullHandler( void* v, GLViewEvent* e )
 {
     (void) v;
@@ -510,6 +595,13 @@ void glv_destroy( GLView* view )
                 XFreeCursor( disp, view->nullCursor );
                 view->nullCursor = -1;
             }
+
+#ifdef USE_CURSORS
+            glv_freeCustomCursors(view);
+            free(view->customCursor);
+            view->customCursor = 0;
+            view->cursorCount = 0;
+#endif
 
             XDestroyWindow( disp, view->window );
             view->window = 0;
@@ -1276,8 +1368,7 @@ void glv_iconify( GLView* view )
 
 /**
   Show or hide the native mouse pointer.
-  There are no provisions to set the native pointer image.  It is assumed
-  that a GL primitive will be used for custom pointers.
+  To display a custom cursor use glv_setCursor();
 */
 void glv_showCursor( GLView* view, int on )
 {

@@ -48,6 +48,8 @@ typedef struct {
     Atom deleteAtom;
     Atom wmAtom[3];
     Cursor nullCursor;
+    Cursor* customCursor;
+    int cursorCount;
 } GLView;
 
 
@@ -142,6 +144,9 @@ extern int  glv_clipboardText( GLView* view,
 
 /* X11 Only */
 extern int  glv_setIcon( GLView* view, const long* image );
+extern int  glv_loadCursors( GLView* view, const short* areas, int cursorCount,
+                     const unsigned char* pixels, int pixelsWidth, int argb );
+extern void glv_setCursor( GLView* view, int cursorIndex );
 
 
 #ifdef __cplusplus
