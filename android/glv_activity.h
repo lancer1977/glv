@@ -21,8 +21,8 @@
 #include <poll.h>
 #include <pthread.h>
 #include <sched.h>
-#include <glv.h>
-#include <gesture.h>
+#include "glv.h"
+#include "gesture.h"
 
 #include <android/configuration.h>
 #include <android/looper.h>

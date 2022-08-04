@@ -8,8 +8,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <glv.h>
-#include <glv_activity.h>
+#include "glv.h"
+#include "glv_activity.h"
 #include <EGL/eglext.h>         /* Defines EGL_OPENGL_ES3_BIT_KHR */
 #include <android/keycodes.h>
 
