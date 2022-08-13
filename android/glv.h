@@ -86,6 +86,7 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_EVENT_EXPOSE        11
 #define GLV_EVENT_APP           12
 #define GLV_EVENT_PINCH         13
+#define GLV_EVENT_DPAD          14
 #define GLV_EVENT_USER          32
 
 /* GLViewEvent code for GLV_EVENT_BUTTON_DOWN/UP events */
@@ -106,6 +107,13 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_MASK_LEFT       0x10        // AMOTION_EVENT_BUTTON_PRIMARY   << 4
 #define GLV_MASK_MIDDLE     0x20        // AMOTION_EVENT_BUTTON_SECONDARY << 4
 #define GLV_MASK_RIGHT      0x40        // AMOTION_EVENT_BUTTON_TERTIARY  << 4
+
+/* GLViewEvent code & state mask for GLV_EVENT_DPAD */
+#define GLV_DPAD_ACTIVE     0x01
+#define GLV_DPAD_UP         0x04
+#define GLV_DPAD_DOWN       0x08
+#define GLV_DPAD_LEFT       0x10
+#define GLV_DPAD_RIGHT      0x20
 
 
 #ifdef __cplusplus
@@ -142,6 +150,7 @@ extern int  glv_clipboardText( GLView* view,
 /* Android Only */
 extern int  glv_ascii( const GLViewEvent* );
 extern void glv_showSoftInput( GLView* view, int visible );
+extern void glv_setDPadRect( GLView* view, int pad, const float* rect );
 #define glv_eventPinch(ev)  ((float*) &(ev)->x)
 
 

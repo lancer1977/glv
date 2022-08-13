@@ -39,6 +39,8 @@
 #  define LOGV(...)  ((void)0)
 #endif
 
+#define USE_DPAD    1
+
 
 extern void glv_initEGL( GLView*, ANativeWindow* );
 extern void glv_freeEGL( GLView* );
@@ -256,8 +258,21 @@ static void process_input(struct android_app* app, struct android_poll_source* s
                 size_t count = AMotionEvent_getPointerCount( event );
                 int state;
 
-                LOGV("motion action: 0x%X button-state: 0x%X pcount: %lu\n",
-                        action, AMotionEvent_getButtonState(event), count);
+                //LOGV("motion action: 0x%X button-state: 0x%X pcount: %lu\n",
+                //        action, AMotionEvent_getButtonState(event), count);
+
+#ifdef USE_DPAD
+                const DPadDetector* dpad = &app->dpad;
+                if( dpad_detect(&app->dpad, event, app->dpFactor) ) {
+                    ve.type  = GLV_EVENT_DPAD;
+                    ve.code  = dpad->state;
+                    ve.state = dpad->prevState;
+                    ve.x     = dpad->originX;
+                    ve.y     = dpad->originY;
+
+                    view->eventHandler( view, &ve );
+                }
+#endif
 
                 state = pinch_detect(&app->pinch, event);
                 if( state > GESTURE_STATE_NONE ) {
@@ -353,7 +368,21 @@ static void process_cmd(struct android_app* app, struct android_poll_source* sou
             break;
 
         case APP_CMD_GAINED_FOCUS:
-            pinch_init(&app->pinch);
+            // Reset motion detectors.
+            {
+                int32_t density = AConfiguration_getDensity(app->config);
+                if (density > ACONFIGURATION_DENSITY_DEFAULT &&
+                    density < ACONFIGURATION_DENSITY_ANY)
+                    app->dpFactor = 160.0f / density;
+                else
+                    app->dpFactor = 1.0f;
+                //fprintf(stderr, "KR density %d %f\n", density, app->dpFactor);
+#ifdef USE_DPAD
+                dpad_init(&app->dpad);
+#endif
+                pinch_init(&app->pinch);
+            }
+
             ve.type = GLV_EVENT_FOCUS_IN;
             goto dispatch;
 #if 0
@@ -734,3 +763,13 @@ void glv_showSoftInput( GLView* view, int visible )
     }
 #endif
 }
+
+#ifdef USE_DPAD
+void glv_setDPadRect( GLView* view, int pad, const float* rect )
+{
+    if( pad == 0 ) {
+        float* dest = ((struct android_app*) view)->dpad.rect;
+        memcpy(dest, rect, 4 * sizeof(float));
+    }
+}
+#endif

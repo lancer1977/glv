@@ -113,7 +113,9 @@ struct android_poll_source {
 struct android_app {
 #ifdef GLV_H
     GLView view;
+    DPadDetector dpad;
     PinchDetector pinch;
+    float dpFactor;
 #else
     // The application can place a pointer to its own state object
     // here if it likes.
