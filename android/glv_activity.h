@@ -99,7 +99,7 @@ struct android_poll_source {
 
     // Function to call to perform the standard processing of data from
     // this source.
-    void (*process)(struct android_app* app, struct android_poll_source* source);
+    void (*process)(struct android_app* app);
 };
 
 /**

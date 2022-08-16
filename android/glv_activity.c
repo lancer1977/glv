@@ -199,7 +199,7 @@ static void android_app_destroy(struct android_app* android_app) {
     // Can't touch android_app object after this.
 }
 
-static void process_input(struct android_app* app, struct android_poll_source* source) {
+static void process_input(struct android_app* app) {
     AInputEvent* event = NULL;
     GLViewEvent ve;
     int32_t type;
@@ -329,7 +329,7 @@ static void process_input(struct android_app* app, struct android_poll_source* s
     }
 }
 
-static void process_cmd(struct android_app* app, struct android_poll_source* source) {
+static void process_cmd(struct android_app* app) {
     GLViewEvent ve;
     int cmd = android_app_read_cmd(app);
     android_app_pre_exec_cmd(app, cmd);
@@ -435,7 +435,7 @@ int android_app_wait_window(struct android_app* app) {
         if( ++i > 20 )
             return 0;
         //LOGI( "KR wait_window\n" );
-        process_cmd( app, &app->cmdPollSource );
+        process_cmd( app );
     }
     if( app->view.display == EGL_NO_DISPLAY )
         glv_initEGL( &app->view, app->window );
@@ -445,7 +445,7 @@ int android_app_wait_window(struct android_app* app) {
 /*
 void android_app_wait_state(struct android_app* app, int cmd) {
     while( app->activityState != cmd ) {
-        process_cmd( app, &app->cmdPollSource );
+        process_cmd( app );
     }
 }
 */
