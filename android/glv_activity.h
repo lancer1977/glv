@@ -23,6 +23,7 @@
 #include <sched.h>
 #include "glv.h"
 #include "gesture.h"
+#include "rqueue.h"
 
 #include <android/configuration.h>
 #include <android/looper.h>
@@ -113,6 +114,7 @@ struct android_poll_source {
 struct android_app {
 #ifdef GLV_H
     GLView view;
+    RQueue eventQueue;
     DPadDetector dpad;
     PinchDetector pinch;
     float dpFactor;

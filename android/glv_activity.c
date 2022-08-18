@@ -199,9 +199,12 @@ static void android_app_destroy(struct android_app* android_app) {
     // Can't touch android_app object after this.
 }
 
+RQUEUE_DECLARE(GLViewEvent);
+#define appendEvent()   rqueue_append_GLViewEvent(&app->eventQueue)
+
 static void process_input(struct android_app* app) {
     AInputEvent* event = NULL;
-    GLViewEvent ve;
+    GLViewEvent* ve;
     int32_t type;
     int32_t isrc;
     int32_t handled;
@@ -235,17 +238,15 @@ static void process_input(struct android_app* app) {
                 }
 
                 if( type ) {
-                    GLView* view = &app->view;
+                    ve = appendEvent();
+                    ve->type  = type;
+                    ve->code  = AKeyEvent_getKeyCode( event );
+                    //        = AKeyEvent_getScanCode( event );
+                    ve->state = AKeyEvent_getMetaState( event );
+                    //        = AKeyEvent_getFlags( event );
+                    ve->x     = 0;
+                    ve->y     = 0;
 
-                    ve.type  = type;
-                    ve.code  = AKeyEvent_getKeyCode( event );
-                    //       = AKeyEvent_getScanCode( event );
-                    ve.state = AKeyEvent_getMetaState( event );
-                    //       = AKeyEvent_getFlags( event );
-                    ve.x     = 0;
-                    ve.y     = 0;
-
-                    view->eventHandler( view, &ve );
                     handled = 1;
                 }
             }
@@ -253,7 +254,6 @@ static void process_input(struct android_app* app) {
 
             case AINPUT_EVENT_TYPE_MOTION:
             {
-                GLView* view = &app->view;
                 int32_t action = AMotionEvent_getAction( event );
                 size_t count = AMotionEvent_getPointerCount( event );
                 int state;
@@ -264,13 +264,12 @@ static void process_input(struct android_app* app) {
 #ifdef USE_DPAD
                 const DPadDetector* dpad = &app->dpad;
                 if( dpad_detect(&app->dpad, event, app->dpFactor) ) {
-                    ve.type  = GLV_EVENT_DPAD;
-                    ve.code  = dpad->state;
-                    ve.state = dpad->prevState;
-                    ve.x     = dpad->originX;
-                    ve.y     = dpad->originY;
-
-                    view->eventHandler( view, &ve );
+                    ve = appendEvent();
+                    ve->type  = GLV_EVENT_DPAD;
+                    ve->code  = dpad->state;
+                    ve->state = dpad->prevState;
+                    ve->x     = dpad->originX;
+                    ve->y     = dpad->originY;
                 }
 #endif
 
@@ -281,13 +280,12 @@ static void process_input(struct android_app* app) {
                         //fprintf( stderr, "KR pinch %d %f,%f\n",
                         //         state, p2[0]-p1[0], p2[1]-p1[1] );
 
-                        ve.type  = GLV_EVENT_PINCH;
-                        ve.code  = state;
-                        ve.state = 0;
-                        *((float*) &ve.x) = p2[0] - p1[0];
-                        *((float*) &ve.y) = p2[1] - p1[1];
-
-                        view->eventHandler( view, &ve );
+                        ve = appendEvent();
+                        ve->type  = GLV_EVENT_PINCH;
+                        ve->code  = state;
+                        ve->state = 0;
+                        *((float*) &ve->x) = p2[0] - p1[0];
+                        *((float*) &ve->y) = p2[1] - p1[1];
                     }
                 }
 
@@ -311,14 +309,14 @@ static void process_input(struct android_app* app) {
                 }
 
                 if( type ) {
-                    ve.type  = type;
-                    ve.code  = (type == GLV_EVENT_MOTION) ? 0 : GLV_BUTTON_LEFT;
-                    ve.state = AMotionEvent_getButtonState( event ) << 4;
-                    //       = AMotionEvent_getFlags( event );
-                    ve.x     = (int) AMotionEvent_getX( event, 0 );
-                    ve.y     = (int) AMotionEvent_getY( event, 0 );
+                    ve = appendEvent();
+                    ve->type  = type;
+                    ve->code  = (type == GLV_EVENT_MOTION) ? 0 : GLV_BUTTON_LEFT;
+                    ve->state = AMotionEvent_getButtonState( event ) << 4;
+                    //        = AMotionEvent_getFlags( event );
+                    ve->x     = (int) AMotionEvent_getX( event, 0 );
+                    ve->y     = (int) AMotionEvent_getY( event, 0 );
 
-                    view->eventHandler( view, &ve );
                     handled = 1;
                 }
             }
@@ -330,7 +328,7 @@ static void process_input(struct android_app* app) {
 }
 
 static void process_cmd(struct android_app* app) {
-    GLViewEvent ve;
+    GLViewEvent* ve;
     int cmd = android_app_read_cmd(app);
     android_app_pre_exec_cmd(app, cmd);
 
@@ -351,9 +349,9 @@ static void process_cmd(struct android_app* app) {
                 //engine_draw_frame(glv);
 
                 /*
-                ve.type = GLV_EVENT_RESIZE;
-                ve.x    = view->width;
-                ve.y    = view->height;
+                ve->type = GLV_EVENT_RESIZE;
+                ve->x    = view->width;
+                ve->y    = view->height;
                 goto dispatch;
                 */
             }
@@ -383,7 +381,8 @@ static void process_cmd(struct android_app* app) {
                 pinch_init(&app->pinch);
             }
 
-            ve.type = GLV_EVENT_FOCUS_IN;
+            ve = appendEvent();
+            ve->type = GLV_EVENT_FOCUS_IN;
             goto dispatch;
 #if 0
             // When our app gains focus, we start monitoring the accelerometer.
@@ -397,7 +396,8 @@ static void process_cmd(struct android_app* app) {
 #endif
 
         case APP_CMD_LOST_FOCUS:
-            ve.type = GLV_EVENT_FOCUS_OUT;
+            ve = appendEvent();
+            ve->type = GLV_EVENT_FOCUS_OUT;
             goto dispatch;
 #if 0
             // When our app gains focus, we start monitoring the accelerometer.
@@ -415,15 +415,17 @@ static void process_cmd(struct android_app* app) {
 
     if( cmd > -1 )
     {
-        ve.type  = GLV_EVENT_APP;
-        ve.code  = cmd;
-        ve.state = 0;
-        ve.x     = 0;
-        ve.y     = 0;
-dispatch:
-        app->view.eventHandler( &app->view, &ve );
+        ve = appendEvent();
+        ve->type  = GLV_EVENT_APP;
+        ve->code  = cmd;
+        ve->state = 0;
+        ve->x     = 0;
+        ve->y     = 0;
+//dispatch:
+        //app->view.eventHandler( &app->view, &ve );
     }
 
+dispatch:
     android_app_post_exec_cmd(app, cmd);
 }
 
@@ -523,6 +525,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
 #ifdef GLV_H
     // Init GLV data before creating app thread.
     gGlvApp = android_app;
+    rqueue_init(&android_app->eventQueue, 8, sizeof(GLViewEvent));
     android_app->view.eventHandler = glv_nullHandler;
 #endif
 
@@ -591,6 +594,8 @@ static void android_app_free(struct android_app* android_app) {
         pthread_cond_wait(&android_app->cond, &android_app->mutex);
     }
     pthread_mutex_unlock(&android_app->mutex);
+
+    rqueue_free(&android_app->eventQueue);
 
     close(android_app->msgread);
     close(android_app->msgwrite);

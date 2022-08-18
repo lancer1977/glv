@@ -321,6 +321,10 @@ void glv_setEventHandler( GLView* view, GLViewEvent_f func )
 }
 
 
+#include "rqueue.c"
+RQUEUE_IMP(GLViewEvent);
+
+
 /**
   Waits until an event is recieved.
 
@@ -339,6 +343,13 @@ void glv_waitEvent( GLView* view )
     {
         if( source != NULL )
             source->process( source->app );
+    }
+
+    {
+    GLViewEvent* ve;
+    RQueue* queue = &((struct android_app*) view)->eventQueue;
+    while ((ve = rqueue_removeHead_GLViewEvent(queue)))
+        view->eventHandler( view, ve );
     }
 }
 
@@ -373,6 +384,13 @@ void glv_handleEvents( GLView* view )
     {
         if( source != NULL )
             source->process( source->app );
+    }
+
+    {
+    GLViewEvent* ve;
+    RQueue* queue = &((struct android_app*) view)->eventQueue;
+    while ((ve = rqueue_removeHead_GLViewEvent(queue)))
+        view->eventHandler( view, ve );
     }
 }
 
