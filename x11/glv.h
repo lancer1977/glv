@@ -143,7 +143,8 @@ extern int  glv_clipboardText( GLView* view,
                        void* user );
 
 /* X11 Only */
-extern int  glv_setIcon( GLView* view, const long* image );
+extern int  glv_setIcon( GLView* view, int width, int height,
+                         const unsigned char* pixels, int argb );
 extern int  glv_loadCursors( GLView* view, const short* areas, int cursorCount,
                      const unsigned char* pixels, int pixelsWidth, int argb );
 extern void glv_setCursor( GLView* view, int cursorIndex );

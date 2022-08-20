@@ -1784,20 +1784,44 @@ int glv_clipboardText( GLView* view,
 /**
   Set application icon for the X11 window manager.
 
-  \param image  Width & height followed by ARGB pixel data.
-                If NULL then the icon will be deleted.
+  \param width      Width of image stored in pixels.
+  \param height     Height of image stored in pixels.
+  \param pixels     32-bit RGBA or ARGB values.
+                    If NULL then the icon will be deleted.
+  \param argb       Pixel color channel format (0 = RGBA, 1 = ARGB)
 
   \return Non-zero if icon was accepted.
 */
-int glv_setIcon( GLView* view, const long* image )
+int glv_setIcon( GLView* view, int width, int height,
+                 const unsigned char* pixels, int argb )
 {
     Display* disp = view->display;
     Atom wm_icon = XInternAtom(disp, "_NET_WM_ICON", False);
-    if (image) {
-        // TODO: Use XSetErrorHandler() to see if this succeeds.
-        XChangeProperty(disp, view->window, wm_icon, XA_CARDINAL, 32,
-                        PropModeReplace, (unsigned char*) image,
-                        2 + (image[0] * image[1]));
+    if (pixels) {
+        size_t pixelCount = width * height;
+        long* icon = (long*) malloc((2 + pixelCount) * sizeof(long));
+        if (icon) {
+            const unsigned char* sp  = pixels;
+            const unsigned char* end = pixels + pixelCount * 4;
+            long* ip = icon + 2;
+
+            icon[0] = width;
+            icon[1] = height;
+            if (argb) {
+                for (; sp != end; sp += 4)
+                    *ip++ = sp[0] << 24 | sp[1] << 16 | sp[2] << 8 | sp[3];
+            } else {
+                for (; sp != end; sp += 4)
+                    *ip++ = sp[3] << 24 | sp[0] << 16 | sp[1] << 8 | sp[2];
+            }
+
+            // TODO: Use XSetErrorHandler() to see if this succeeds.
+            XChangeProperty(disp, view->window, wm_icon, XA_CARDINAL, 32,
+                            PropModeReplace, (unsigned char*) icon,
+                            2 + pixelCount);
+            free(icon);
+        }
+
     } else {
         XDeleteProperty(disp, view->window, wm_icon);
     }
