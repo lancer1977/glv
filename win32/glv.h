@@ -47,6 +47,8 @@ typedef struct {
     void (*eventHandler)( void*, GLViewEvent* );
     unsigned short flags;
     int modeId;
+    HICON* customCursor;
+    int cursorCount;
 } GLView;
 
 
@@ -140,6 +142,9 @@ extern int  glv_ascii();
 extern int  glv_clipboardText( GLView* view,
                        void (*func)(const char* data, int len, void* user),
                        void* user );
+extern int  glv_loadCursors( GLView* view, const short* areas, int cursorCount,
+                     const unsigned char* pixels, int pixelsWidth, int argb );
+extern void glv_setCursor( GLView* view, int cursorIndex );
 
 
 #ifdef __cplusplus

@@ -366,6 +366,154 @@ static void _restoreVideo( GLView* view )
 }
 
 
+#ifdef USE_CURSORS
+static void glv_freeCustomCursors( GLView* view )
+{
+    int i;
+    for (i = 0; i < view->cursorCount; ++i)
+        DestroyIcon(view->customCursor[i]);
+}
+
+
+/*
+ * Create an ARGB bitmap with top-down row order.
+ */
+static HBITMAP bitmapCreate(int width, int height, unsigned char** bitmapData)
+{
+    HBITMAP handle;
+    BITMAPV5HEADER bi;
+    HDC dc;
+
+    ZeroMemory(&bi, sizeof(bi));
+    bi.bV5Size        = sizeof(bi);
+    bi.bV5Width       = width;
+    bi.bV5Height      = -height;    // Negative for top-down row order.
+    bi.bV5Planes      = 1;
+    bi.bV5BitCount    = 32;
+    bi.bV5Compression = BI_BITFIELDS;
+    bi.bV5RedMask     = 0x00ff0000;
+    bi.bV5GreenMask   = 0x0000ff00;
+    bi.bV5BlueMask    = 0x000000ff;
+    bi.bV5AlphaMask   = 0xff000000;
+
+    dc = GetDC(NULL);
+    handle = CreateDIBSection(dc, (BITMAPINFO*) &bi, DIB_RGB_COLORS,
+                             (void**) bitmapData, NULL, (DWORD) 0);
+    ReleaseDC(NULL, dc);
+    return handle;
+}
+
+
+/*
+ * Create a cursor with transparency mask from a bitmap.
+ */
+static HICON cursorCreate(HBITMAP bitmap, int width, int height,
+                          int xhot, int yhot)
+{
+    HICON handle;
+    HBITMAP mask;
+    ICONINFO info;
+
+    mask = CreateBitmap(width, height, 1, 1, NULL);
+    if (! mask)
+        return NULL;
+
+    ZeroMemory(&info, sizeof(info));
+    info.fIcon    = FALSE;      // FALSE specifies cursor.
+    info.xHotspot = xhot;
+    info.yHotspot = yhot;
+    info.hbmMask  = mask;
+    info.hbmColor = bitmap;
+
+    handle = CreateIconIndirect(&info);
+    DeleteObject(mask);
+
+    return handle;
+}
+
+
+/**
+  Define a set of cursors.
+
+  \param areas          Area within the pixels data for each cursor.
+                        Each cursor has these six values:
+                            x, y, width, height, hotx, hoty
+                        The hotspot is relative to x, y.
+  \param count          Number of cursors in areas array.
+  \param pixels         32-bit RGBA or ARGB values.
+  \param pixelsWidth    Width of image stored in pixels.
+  \param argb           Pixel color channel format (0 = RGBA, 1 = ARGB)
+*/
+int glv_loadCursors( GLView* view, const short* areas, int count,
+                     const unsigned char* pixels, int pixelsWidth, int argb )
+{
+    HBITMAP cmap;
+    unsigned char* cp;
+    const unsigned char* srcRow;
+    const unsigned char* sp;
+    int x, y, w, h;
+    int failed = 0;
+    int i;
+
+    if (view->cursorCount)
+        glv_freeCustomCursors(view);
+
+    view->customCursor = realloc(view->customCursor, count*sizeof(HICON));
+    view->cursorCount = count;
+
+    pixelsWidth *= 4;
+
+    for (i = 0; i < count; ++i) {
+        w = areas[2];
+        h = areas[3];
+        cmap = bitmapCreate(w, h, &cp);
+        if (! cmap) {
+            view->customCursor[i] = NULL;
+            ++failed;
+        } else {
+            srcRow = pixels + (pixelsWidth * areas[1]) + (areas[0] * 4);
+
+            for (y = 0; y < h; ++y) {
+                sp = srcRow;
+                if (argb) {
+                    for (x = 0; x < w; ++x, sp += 4) {
+                        *cp++ = sp[0];
+                        *cp++ = sp[1];
+                        *cp++ = sp[2];
+                        *cp++ = sp[3];
+                    }
+                } else {
+                    for (x = 0; x < w; ++x, sp += 4) {
+                        *cp++ = sp[2];
+                        *cp++ = sp[1];
+                        *cp++ = sp[0];
+                        *cp++ = sp[3];
+                    }
+                }
+                srcRow += pixelsWidth;
+            }
+
+            view->customCursor[i] = cursorCreate(cmap, w, h, areas[4], areas[5]);
+            DeleteObject(cmap);
+        }
+
+        areas += 6;
+    }
+    return failed ? 0 : 1;
+}
+
+
+/**
+  Show one of the cursors defined by glv_loadCursors().
+*/
+void glv_setCursor( GLView* view, int cursorIndex )
+{
+    if (cursorIndex < view->cursorCount)
+        SetCursor(view->customCursor[cursorIndex]);
+}
+#endif
+
+
 /**
   Called to close the glview and free any used resources.
 */
@@ -375,6 +523,13 @@ void glv_destroy( GLView* view )
     {
         if( view->wnd )
         {
+#ifdef USE_CURSORS
+            glv_freeCustomCursors(view);
+            free(view->customCursor);
+            view->customCursor = NULL;
+            view->cursorCount = 0;
+#endif
+
             _restoreVideo( view );
             _destroyWindow( view );
             UnregisterClass( className, hInstance );
@@ -593,12 +748,17 @@ void glv_iconify( GLView* view )
 
 /**
   Show or hide the native mouse pointer.
-  There are no provisions to set the native pointer image.  It is assumed
-  that a GL primitive will be used for custom pointers.
+  To display a custom cursor use glv_setCursor();
 */
 void glv_showCursor( GLView* view, int on )
 {
     (void) view;
+
+#ifdef USE_CURSORS
+    if (on)
+        SetCursor(LoadCursor(NULL, IDC_ARROW));
+#endif
+
     ShowCursor( on ? TRUE : FALSE );
 }
 
