@@ -14,8 +14,9 @@
 
 
 #define FLAG_ATTRIB                 0x0007
-#define FLAG_FULLSCREEN_MODE        0x0040
-#define FLAG_FILTER_REPEAT          0x0080
+#define FLAG_FULLSCREEN_MODE        0x0010
+#define FLAG_FULLWINDOW_MODE        0x0020
+#define FLAG_FILTER_REPEAT          0x0040
 
 
 static GLView* _cv = 0;
@@ -710,38 +711,131 @@ int glv_queryModes( GLViewMode_f func, void* data )
 }
 
 
+static BOOL _desktopDisplay(int adapter, DISPLAY_DEVICE* dd)
+{
+    int devCount = 0;
+    int acount = 0;
+
+    ZeroMemory(dd, sizeof(DISPLAY_DEVICE));
+    dd->cb = sizeof(DISPLAY_DEVICE);
+
+    while (EnumDisplayDevices(NULL, devCount, dd, 0)) {
+        if (dd->StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP) {
+            if (adapter == acount)
+                return TRUE;
+            ++acount;
+        }
+        ++devCount;
+    }
+    return FALSE;
+}
+
+
+static BOOL _monitorSize(int adapter, int* size)
+{
+    DISPLAY_DEVICE dd;
+    DEVMODE dm;
+
+    if (_desktopDisplay(adapter, &dd)) {
+        ZeroMemory(&dm, sizeof(dm));
+        dm.dmSize = sizeof(dm);
+        if (! EnumDisplaySettings(dd.DeviceName, ENUM_CURRENT_SETTINGS, &dm))
+            return FALSE;
+
+        if (dm.dmFields & DM_PELSWIDTH &&
+            dm.dmFields & DM_PELSHEIGHT) {
+            size[0] = dm.dmPelsWidth;
+            size[1] = dm.dmPelsHeight;
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+
 /**
   Returns non-zero if successful.
   Must not be called from within input handler.
 */
 int glv_changeMode( GLView* view, const GLViewMode* mode )
 {
-    if( mode->id == view->modeId )
-        return( 1 );
+    int oldModeFS = (view->flags & FLAG_FULLSCREEN_MODE) ? 1 : 0;
+    int newModeFS = (mode->id > GLV_MODEID_WINDOW) ? 1 : 0;
 
-    if( mode->id == GLV_MODEID_WINDOW )
+    /* Return if mode is current */
+    if (oldModeFS == newModeFS) {
+        if (mode->id == GLV_MODEID_FULL_WINDOW) {
+            if (view->flags & FLAG_FULLWINDOW_MODE)
+                return 1;
+        } else {
+            if (mode->width == view->width && mode->height == view->height)
+                return 1;
+        }
+    }
+
+    if (! newModeFS)
     {
-        if( view->flags & FLAG_FULLSCREEN_MODE )
-        {
-            _restoreVideo( view );
-            _destroyWindow( view );
+        /* Change to desktop window. */
+
+        if (oldModeFS) {
+            _restoreVideo(view);
+            _destroyWindow(view);
 
             view->width  = mode->width;
             view->height = mode->height;
 
-            _createWindow( view, 0, view->flags );
+            _createWindow(view, 0, view->flags);
+        }
+
+        if (mode->id == GLV_MODEID_FULL_WINDOW) {
+            int size[2];
+            HWND wnd = view->wnd;
+
+            if (! _monitorSize(0, size)) {
+                size[0] = mode->width;      // Fallback to mode size.
+                size[1] = mode->height;
+            }
+
+            SetWindowLong(wnd, GWL_STYLE, WS_VISIBLE | WS_POPUP);
+            SetWindowLong(wnd, GWL_EXSTYLE, WS_EX_APPWINDOW);
+            SetWindowPos(wnd, HWND_TOP, 0, 0, size[0], size[1],
+                         SWP_FRAMECHANGED);
+            view->flags |= FLAG_FULLWINDOW_MODE;
+        } else {
+            RECT fr;
+            HWND wnd = view->wnd;
+            LONG style = (mode->id == GLV_MODEID_FIXED_WINDOW) ?
+                        WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX :
+                        WS_VISIBLE | WS_OVERLAPPEDWINDOW;
+
+            SetRect(&fr, 0, 0, mode->width, mode->height);
+            AdjustWindowRect(&fr, style, FALSE);
+
+            SetWindowLong(wnd, GWL_STYLE, style);
+            SetWindowPos(wnd, HWND_TOP, 0, 0,
+                         fr.right - fr.left, fr.bottom - fr.top,
+                         SWP_NOMOVE | SWP_FRAMECHANGED);
+            view->flags &= ~FLAG_FULLWINDOW_MODE;
+#if 0
+            if (mode->id == GLV_MODEID_FIXED_WINDOW) {
+                // Disable resize by menu.
+                HMENU menu = GetSystemMenu(wnd, FALSE);
+                DeleteMenu(menu, SC_SIZE, MF_BYCOMMAND);
+                DeleteMenu(menu, SC_MAXIMIZE, MF_BYCOMMAND);
+                DrawMenuBar(wnd);
+            }
+#endif
         }
     }
     else
     {
         DEVMODE devmode;
 
-        ZeroMemory( &devmode, sizeof(DEVMODE) );
+        ZeroMemory(&devmode, sizeof(DEVMODE));
         devmode.dmSize = sizeof(DEVMODE);
         devmode.dmDriverExtra = 0;
 
-        if( EnumDisplaySettings( NULL, mode->id, &devmode ) )
-        {
+        if (EnumDisplaySettings(NULL, mode->id, &devmode)) {
             devmode.dmFields = DM_BITSPERPEL |
                                DM_PELSWIDTH |
                                DM_PELSHEIGHT |
@@ -755,26 +849,24 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
             devmode.dmFields     |= DM_POSITION;
 #endif
 
-            if( ChangeDisplaySettings( &devmode, CDS_FULLSCREEN ) ==
-                DISP_CHANGE_SUCCESSFUL )
-            {
-                if( (view->flags & FLAG_FULLSCREEN_MODE) == 0 )
-                {
-                    _destroyWindow( view );
-                    _createWindow( view, 1, view->flags );
+            if (ChangeDisplaySettings(&devmode, CDS_FULLSCREEN) ==
+                DISP_CHANGE_SUCCESSFUL) {
+                if ((view->flags & FLAG_FULLSCREEN_MODE) == 0) {
+                    _destroyWindow(view);
+                    _createWindow(view, 1, view->flags);
                 }
 
-                MoveWindow( view->wnd, 0, 0,
-                            devmode.dmPelsWidth, devmode.dmPelsHeight, FALSE );
+                MoveWindow(view->wnd, 0, 0,
+                           devmode.dmPelsWidth, devmode.dmPelsHeight, FALSE);
                 view->flags |= FLAG_FULLSCREEN_MODE;
             }
         }
     }
 
-    glv_show( view );
+    glv_show(view);
 
     view->modeId = mode->id;
-    return( 1 );
+    return 1;
 }
 
 
