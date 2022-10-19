@@ -13,8 +13,9 @@
 
 
 #define FLAG_ATTRIB                 0x0007
-#define FLAG_FULLSCREEN_MODE        0x0040
-#define FLAG_FILTER_REPEAT          0x0080
+#define FLAG_FULLSCREEN_MODE        0x0010
+#define FLAG_FULLWINDOW_MODE        0x0020
+#define FLAG_FILTER_REPEAT          0x0040
 
 
 static GLView* _cv = 0;
@@ -590,18 +591,74 @@ int glv_queryModes( GLViewMode_f func, void* data )
 }
 
 
+static BOOL _desktopDisplay(int adapter, DISPLAY_DEVICE* dd)
+{
+    int devCount = 0;
+    int acount = 0;
+
+    ZeroMemory(dd, sizeof(DISPLAY_DEVICE));
+    dd.cb = sizeof(DISPLAY_DEVICE);
+
+    while (EnumDisplayDevices(NULL, devCount, dd, 0)) {
+        if (dd->StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP) {
+            if (adapter == acount)
+                return TRUE;
+            ++acount;
+        }
+        ++devCount;
+    }
+    return FALSE;
+}
+
+
+static BOOL _monitorSize(int adapter, int* size)
+{
+    DISPLAY_DEVICE dd;
+    DEVMODE dm;
+
+    if (_desktopDisplay(adapter, &dd)) {
+        ZeroMemory(&dm, sizeof(dm));
+        dm.dmSize = sizeof(dm);
+        if (! EnumDisplaySettings(dd.DeviceName, ENUM_CURRENT_SETTINGS, &dm))
+            return FALSE;
+
+        if (dm.dmFields & DM_PELSWIDTH &&
+            dm.dmFields & DM_PELSHEIGHT) {
+            size[0] = dm.dmPelsWidth;
+            size[1] = dm.dmPelsHeight;
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+
 /**
   Returns non-zero if successful.
   Must not be called from within input handler.
 */
 int glv_changeMode( GLView* view, const GLViewMode* mode )
 {
-    if( mode->id == view->modeId )
-        return( 1 );
+    int oldModeFS = (view->flags & FLAG_FULLSCREEN_MODE) ? 1 : 0;
+    int newModeFS = (mode->id > GLV_MODEID_WINDOW) ? 1 : 0;
 
-    if( mode->id == GLV_MODEID_WINDOW )
+    /* Return if mode is current */
+    if( oldModeFS == newModeFS )
     {
-        if( view->flags & FLAG_FULLSCREEN_MODE )
+        if( mode->id == GLV_MODEID_FULL_WINDOW ) {
+            if( view->flags & FLAG_FULLWINDOW_MODE )
+                return 1;
+        } else {
+            if( mode->width == view->width && mode->height == view->height )
+                return 1;
+        }
+    }
+
+    if( ! newModeFS )
+    {
+        /* Change to desktop window. */
+
+        if( oldModeFS )
         {
             _restoreVideo( view );
             _destroyWindow( view );
@@ -610,6 +667,43 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
             view->height = mode->height;
 
             _createWindow( view, 0, view->flags );
+        }
+
+        if( mode->id == GLV_MODEID_FULL_WINDOW )
+        {
+            int size[2];
+            HWND wnd = view->wnd;
+
+            if (! _monitorSize(0, size)) {
+                size[0] = mode->w;          // Fallback to mode size.
+                size[1] = mode->h;
+            }
+
+            SetWindowLong(wnd, GWL_STYLE, WS_VISIBLE);
+            SetWindowLong(wnd, GWL_EXSTYLE, WS_EX_APPWINDOW);
+            SetWindowPos(wnd, HWND_TOP, 0, 0, size[0], size[1],
+                         SWP_FRAMECHANGED);
+            view->flags |= FLAG_FULLWINDOW_MODE;
+        }
+        else
+        {
+            HWND wnd = view->wnd;
+
+            if (view->flags & FLAG_FULLWINDOW_MODE) {
+                view->flags &= ~FLAG_FULLWINDOW_MODE;
+
+                SetWindowLong(wnd, GWL_STYLE, WS_VISIBLE | WS_OVERLAPPEDWINDOW);
+                SetWindowPos(wnd, HWND_TOP, 0, 0, mode->w, mode->h,
+                             SWP_NOMOVE | SWP_FRAMECHANGED);
+            }
+
+            if( mode->id == GLV_MODEID_FIXED_WINDOW ) {
+                // Make window non-resizable.
+                HMENU menu = GetSystemMenu(wnd, false);
+                DeleteMenu(menu, SC_SIZE, MF_BYCOMMAND);
+                DeleteMenu(menu, SC_MAXIMIZE, MF_BYCOMMAND);
+                DrawMenuBar(wnd);
+            }
         }
     }
     else
