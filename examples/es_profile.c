@@ -186,11 +186,14 @@ void eventHandler( GLView* view, GLViewEvent* event )
 }
 
 
-int main()
+int main(int argc, char** argv)
 {
     GLView* view;
     GLViewMode mode;
     UserData data;
+    int i;
+    int attr = GLV_ATTRIB_DOUBLEBUFFER | GLV_ATTRIB_ES;
+    int version = 0;
 
 
     // Default to a window if no fullscreen modes are available.
@@ -198,11 +201,30 @@ int main()
     mode.width  = 640;
     mode.height = 480;
 
-    //glv_queryModes( pickMode, &mode );
+    for (i = 1; i < argc; ++i) {
+        if (argv[i][0] == '-') {
+            switch (argv[i][1]) {
+                case 'm':
+                    attr |= GLV_ATTRIB_MULTISAMPLE;
+                    break;
+                case 's':
+                    attr |= GLV_ATTRIB_STENCIL;
+                    break;
+                case 'r':
+                    setenv("GLV_REPORT", "1", 1);
+                    break;
+                case 'v':
+                    if (++i < argc) {
+                        char* vp = argv[i];
+                        version  = (vp[0] - '0') << 8;
+                        version |= (vp[2] - '0');
+                    }
+                    break;
+            }
+        }
+    }
 
-    view = glv_create( GLV_ATTRIB_DOUBLEBUFFER |
-                       GLV_ATTRIB_MULTISAMPLE |
-                       GLV_ATTRIB_ES, 0 );
+    view = glv_create(attr, version);
     if( view )
     {
         printf( "GL_VERSION: %s\n", (char*) glGetString( GL_VERSION ) );

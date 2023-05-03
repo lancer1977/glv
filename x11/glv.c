@@ -436,6 +436,19 @@ GLView* glv_create( int attributes, int glVersion )
     }
 #endif
 
+    {
+    char* report = getenv("GLV_REPORT");
+    if( report && report[0] == '1' )
+    {
+        int dep, ste, sam;
+        glXGetFBConfigAttrib(disp, fbCfg[ci], GLX_DEPTH_SIZE,   &dep);
+        glXGetFBConfigAttrib(disp, fbCfg[ci], GLX_STENCIL_SIZE, &ste);
+        glXGetFBConfigAttrib(disp, fbCfg[ci], GLX_SAMPLES_ARB,  &sam);
+        printf("FBConfig %d (depth:%d stencil:%d samples:%d)\n",
+               ci, dep, ste, sam);
+    }
+    }
+
 #if defined(GLX_VERSION_1_4)
     {
         int ctxAttr[ 10 ];
