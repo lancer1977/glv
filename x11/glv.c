@@ -727,6 +727,8 @@ int glv_queryModes( GLViewMode_f func, void* data )
 
     return modeCount;
 #else
+    (void) func;
+    (void) data;
     return 0;
 #endif
 }

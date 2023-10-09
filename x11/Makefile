@@ -34,7 +34,7 @@ VER_M        = 0
 VER_MM       = 0.4
 GLV_TARGET   = libglv.so.$(VER_MM)
 endif
-GLV_CFLAGS   = -fPIC -Wall -W -Wno-unused-parameter
+GLV_CFLAGS   = -fPIC -Wall -Wextra
 GLV_INCPATH  = -I.
 GLV_LFLAGS   = -shared
 GLV_LIBS     =
