@@ -149,6 +149,8 @@ extern int  glv_loadCursors( GLView* view, const short* areas, int cursorCount,
                      const unsigned char* pixels, int pixelsWidth, int argb );
 extern void glv_setCursor( GLView* view, int cursorIndex );
 
+#define KEY_ASCII(e)        glv_ascii()
+
 
 #ifdef __cplusplus
 }

@@ -138,7 +138,4 @@
 #define KEY_Help    XK_Help
 
 
-#define KEY_ASCII(e)        glv_ascii()
-
-
 #endif //GLVIEW_KEYS_H
