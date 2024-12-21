@@ -2,6 +2,7 @@
 
   GLV Library for Android
   Copyright (C) 2012,2019  Karl Robillard
+  SPDX-License-Identifier: MIT
 
 /===========================================================================*/
 

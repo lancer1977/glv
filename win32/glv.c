@@ -1,7 +1,8 @@
 /*===========================================================================/
 
   GLV Library for Windows
-  Copyright (C) 2003-2007  Karl Robillard
+  Copyright (C) 2003-2022  Karl Robillard
+  SPDX-License-Identifier: MIT
 
 /===========================================================================*/
 
