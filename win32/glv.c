@@ -867,15 +867,13 @@ void glv_filterRepeatKeys( GLView* view, int on )
 int glv_ascii()
 {
     unsigned char keyState[256];
-    WORD ascii[2];
-    unsigned int scanCode;
+    WORD ascii;
+    UINT scanCode;
 
-    GetKeyboardState( keyState );
-    scanCode = (_keyLParam >> 16) & 127;
-
-    if( ToAscii( _keyWParam, scanCode, keyState, ascii, 0 ) > 0 )
-    {
-        return ascii[0];
+    if (GetKeyboardState(keyState)) {
+        scanCode = (_keyLParam >> 16) & 127;
+        if (ToAscii(_keyWParam, scanCode, keyState, &ascii, 0) == 1)
+            return ascii & 0xff;
     }
 
     /*

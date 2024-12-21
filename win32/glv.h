@@ -148,6 +148,8 @@ extern void glv_setCursor( GLView* view, int cursorIndex );
 /* Windows Only */
 extern void glv_setAppInstance(HINSTANCE);
 
+#define KEY_ASCII(e)        glv_ascii()
+
 
 #ifdef __cplusplus
 }

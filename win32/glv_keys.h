@@ -130,7 +130,4 @@
 #define KEY_F15     VK_F15
 
 
-#define KEY_ASCII(e)        glv_ascii()
-
-
 #endif //GLVIEW_KEYS_H
