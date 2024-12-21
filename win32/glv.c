@@ -1,7 +1,7 @@
 /*===========================================================================/
 
   GLV Library for Windows
-  Copyright (C) 2003-2022  Karl Robillard
+  Copyright (C) 2003-2024  Karl Robillard
   SPDX-License-Identifier: MIT
 
 /===========================================================================*/
@@ -30,7 +30,7 @@ static void glv_nullHandler( void* v, GLViewEvent* e )
 /*--------------------------------------------------------------------------*/
 
 
-HINSTANCE hInstance;
+static HINSTANCE gAppInstance;
 static WPARAM _keyWParam;
 static LPARAM _keyLParam;
 
@@ -206,6 +206,56 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
 }
 
 
+#ifdef NO_WINMAIN
+void glv_setAppInstance(HINSTANCE hi)
+{
+    gAppInstance = hi;
+}
+#else
+extern int main(int, char**);
+
+/*
+  This WinMain just gets us to a normal main().
+*/
+int WINAPI WinMain(HINSTANCE hi, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
+                   int nCmdShow)
+{
+    const int MAX_NUM_ARGVS = 20;
+    int argc = 1;
+    char* argv[MAX_NUM_ARGVS];
+    (void) nCmdShow;
+
+    /* previous instances do not exist in Win32 */
+    if (hPrevInstance)
+        return 0;
+
+    gAppInstance = hi;
+
+    argv[0] = "prog_name";
+
+    while (*lpCmdLine && (argc < MAX_NUM_ARGVS)) {
+        while (*lpCmdLine && ((*lpCmdLine <= 32) || (*lpCmdLine > 126)))
+            lpCmdLine++;
+
+        if( *lpCmdLine ) {
+            argv[ argc ] = lpCmdLine;
+            argc++;
+
+            while (*lpCmdLine && ((*lpCmdLine > 32) && (*lpCmdLine <= 126)))
+                lpCmdLine++;
+
+            if (*lpCmdLine) {
+                *lpCmdLine = 0;
+                lpCmdLine++;
+            }
+        }
+    }
+
+    return main(argc, argv);
+}
+#endif
+
+
 /*--------------------------------------------------------------------------*/
 
 
@@ -234,7 +284,7 @@ static int _createWindow( GLView* view, int fullscreen, int attributes )
     view->wnd = CreateWindow( className, "GLView", style,
                               0, 0,      // x, y
                               view->width, view->height,
-                              NULL, NULL, hInstance, NULL );
+                              NULL, NULL, gAppInstance, NULL );
     if( view->wnd == NULL )
     {
         //setError( "Failed to create window" );
@@ -318,7 +368,7 @@ GLView* glv_create( int attributes, int glVersion )
     wc.lpfnWndProc   = WndProc;
     wc.cbClsExtra    = 0;
     wc.cbWndExtra    = 0;
-    wc.hInstance     = hInstance;
+    wc.hInstance     = gAppInstance;
     wc.hIcon         = LoadIcon( NULL, IDI_APPLICATION );
     wc.hCursor       = LoadCursor( NULL, IDC_ARROW );
     wc.hbrBackground = (HBRUSH) GetStockObject( BLACK_BRUSH );
@@ -532,7 +582,7 @@ void glv_destroy( GLView* view )
 
             _restoreVideo( view );
             _destroyWindow( view );
-            UnregisterClass( className, hInstance );
+            UnregisterClass( className, gAppInstance );
         }
 
         free( view );

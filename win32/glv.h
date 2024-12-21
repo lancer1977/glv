@@ -3,7 +3,7 @@
 /*===========================================================================/
 
   GLV Library for Windows
-  Copyright (C) 2003-2022  Karl Robillard
+  Copyright (C) 2003-2024  Karl Robillard
   SPDX-License-Identifier: MIT
 
 /===========================================================================*/
@@ -11,7 +11,6 @@
 
 #include <windows.h>
 #include <GL/gl.h>
-//#include <GL/glew.h>
 
 
 typedef struct {
@@ -145,6 +144,9 @@ extern int  glv_clipboardText( GLView* view,
 extern int  glv_loadCursors( GLView* view, const short* areas, int cursorCount,
                      const unsigned char* pixels, int pixelsWidth, int argb );
 extern void glv_setCursor( GLView* view, int cursorIndex );
+
+/* Windows Only */
+extern void glv_setAppInstance(HINSTANCE);
 
 
 #ifdef __cplusplus
