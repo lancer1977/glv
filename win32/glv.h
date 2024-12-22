@@ -74,6 +74,8 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_MODEID_FULL_WINDOW  -2
 #define GLV_MODEID_FIXED_WINDOW -3
 
+#define GLV_CURSOR_ARROW    -1
+
 /* GLViewEvent type */
 #define GLV_EVENT_RESIZE        1
 #define GLV_EVENT_CLOSE         2

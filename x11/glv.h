@@ -3,7 +3,7 @@
 /*===========================================================================/
 
   GLV Library for X11
-  Copyright (C) 2003-2023  Karl Robillard
+  Copyright (C) 2003-2024  Karl Robillard
   SPDX-License-Identifier: MIT
 
 /===========================================================================*/
@@ -51,6 +51,7 @@ typedef struct {
     Cursor nullCursor;
     Cursor* customCursor;
     int cursorCount;
+    int activeCursor;
 } GLView;
 
 
@@ -76,6 +77,8 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_MODEID_WINDOW       -1
 #define GLV_MODEID_FULL_WINDOW  -2
 #define GLV_MODEID_FIXED_WINDOW -3
+
+#define GLV_CURSOR_ARROW    -1
 
 /* GLViewEvent type */
 #define GLV_EVENT_RESIZE        1

@@ -370,7 +370,7 @@ GLView* glv_create( int attributes, int glVersion )
     wc.cbWndExtra    = 0;
     wc.hInstance     = gAppInstance;
     wc.hIcon         = LoadIcon( NULL, IDI_APPLICATION );
-    wc.hCursor       = LoadCursor( NULL, IDC_ARROW );
+    wc.hCursor       = NULL;        // Must be NULL to override.
     wc.hbrBackground = (HBRUSH) GetStockObject( BLACK_BRUSH );
     wc.lpszMenuName  = NULL;
     wc.lpszClassName = className;
@@ -397,6 +397,8 @@ GLView* glv_create( int attributes, int glVersion )
     }
     }
 #endif
+
+    SetCursor(LoadCursor(NULL, IDC_ARROW));
 
     _cv = view;
 
@@ -554,12 +556,19 @@ int glv_loadCursors( GLView* view, const short* areas, int count,
 
 
 /**
-  Show one of the cursors defined by glv_loadCursors().
+  Use one of the cursors defined by glv_loadCursors() or the default
+  GLV_CURSOR_ARROW.
+
+  The pointer visibility is controlled separately by glv_showCursor().
 */
 void glv_setCursor( GLView* view, int cursorIndex )
 {
-    if (cursorIndex < view->cursorCount)
-        SetCursor(view->customCursor[cursorIndex]);
+    if (cursorIndex < view->cursorCount) {
+        if (cursorIndex < 0)
+            SetCursor(LoadCursor(NULL, IDC_ARROW));
+        else
+            SetCursor(view->customCursor[cursorIndex]);
+    }
 }
 #endif
 
@@ -797,19 +806,14 @@ void glv_iconify( GLView* view )
 
 
 /**
-  Show or hide the native mouse pointer.
-  To display a custom cursor use glv_setCursor();
+  Show or hide the mouse pointer.
+
+  \sa glv_setCursor()
 */
 void glv_showCursor( GLView* view, int on )
 {
     (void) view;
-
-#ifdef USE_CURSORS
-    if (on)
-        SetCursor(LoadCursor(NULL, IDC_ARROW));
-#endif
-
-    ShowCursor( on ? TRUE : FALSE );
+    ShowCursor(on ? TRUE : FALSE);
 }
 
 

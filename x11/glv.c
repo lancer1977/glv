@@ -154,6 +154,7 @@
 #define FLAG_FULLSCREEN_MODE        0x0010
 #define FLAG_FULLWINDOW_MODE        0x0020
 #define FLAG_FILTER_REPEAT          0x0040
+#define FLAG_CURSOR_SHOWN           0x0080
 
 #define EMASK_KEY       KeyPressMask | KeyReleaseMask
 #define EMASK_MOUSE     ButtonPressMask | ButtonReleaseMask | PointerMotionMask
@@ -312,14 +313,27 @@ int glv_loadCursors( GLView* view, const short* areas, int count,
     return 1;
 }
 
+static void glv_setCursorIn( GLView* view, int cursorIndex )
+{
+    if (cursorIndex < 0)
+        XUndefineCursor(view->display, view->window);
+    else
+        XDefineCursor(view->display, view->window,
+                      view->customCursor[cursorIndex]);
+}
+
 /**
-  Show one of the cursors defined by glv_loadCursors().
+  Use one of the cursors defined by glv_loadCursors() or the default
+  GLV_CURSOR_ARROW.
+
+  The pointer visibility is controlled separately by glv_showCursor().
 */
 void glv_setCursor( GLView* view, int cursorIndex )
 {
     if (cursorIndex < view->cursorCount) {
-        XDefineCursor(view->display, view->window,
-                      view->customCursor[cursorIndex]);
+        view->activeCursor = cursorIndex;
+        if (view->flags & FLAG_CURSOR_SHOWN)
+            glv_setCursorIn(view, cursorIndex);
     }
 }
 #endif
@@ -380,8 +394,9 @@ GLView* glv_create( int attributes, int glVersion )
     // Initialize non-zero members.
     view->display      = disp;
     view->screen       = DefaultScreen( disp );
-    view->flags        = attributes & FLAG_ATTRIB;
+    view->flags        = (attributes & FLAG_ATTRIB) | FLAG_CURSOR_SHOWN;
     view->nullCursor   = -1;
+    view->activeCursor = GLV_CURSOR_ARROW;
     view->eventHandler = glv_nullHandler;
 
 
@@ -1383,14 +1398,20 @@ void glv_iconify( GLView* view )
 
 
 /**
-  Show or hide the native mouse pointer.
-  To display a custom cursor use glv_setCursor();
+  Show or hide the mouse pointer.
+
+  \sa glv_setCursor()
 */
 void glv_showCursor( GLView* view, int on )
 {
     if( on )
     {
-        XUndefineCursor( view->display, view->window );
+#ifdef USE_CURSORS
+        glv_setCursorIn(view, view->activeCursor);
+#else
+        XUndefineCursor(view->display, view->window);
+#endif
+        view->flags |= FLAG_CURSOR_SHOWN;
     }
     else
     {
@@ -1417,6 +1438,7 @@ void glv_showCursor( GLView* view, int on )
         }
 
         XDefineCursor( disp, view->window, view->nullCursor );
+        view->flags &= ~FLAG_CURSOR_SHOWN;
     }
 }
 
