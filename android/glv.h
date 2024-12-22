@@ -12,6 +12,9 @@
 #include <EGL/egl.h>
 #include <GLES3/gl31.h>     /* Available in android-21 (5.0 Lollipop) */
 
+#define GLV_VERSION_STR "0.5.0"
+#define GLV_VERSION     0x000500
+
 
 typedef struct {
     int type;

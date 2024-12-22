@@ -11,6 +11,9 @@
 
 #include <GL/glx.h>
 
+#define GLV_VERSION_STR "0.5.0"
+#define GLV_VERSION     0x000500
+
 
 typedef struct {
     int type;
