@@ -31,7 +31,7 @@ ifdef STATIC_LIB
 GLV_TARGET   = libglv.a
 else
 VER_M        = 0
-VER_MM       = 0.4
+VER_MM       = 0.5
 GLV_TARGET   = libglv.so.$(VER_MM)
 endif
 GLV_CFLAGS   = -fPIC -Wall -Wextra

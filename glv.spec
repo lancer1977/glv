@@ -1,6 +1,6 @@
 Summary: A small, cross-platform display library for OpenGL
 Name: libglv0
-Version: 0.4.0
+Version: 0.5.0
 Release: 1
 License: MIT
 Group: Development/Libraries
@@ -35,9 +35,9 @@ make -C x11
 mkdir -p $RPM_BUILD_ROOT%{_libdir}
 mkdir -p $RPM_BUILD_ROOT%{_includedir}/GL
 install -m 644 x11/*.h $RPM_BUILD_ROOT%{_includedir}/GL
-install -m 755 x11/libglv.so.0.4 $RPM_BUILD_ROOT%{_libdir}
-ln -s libglv.so.0.4 $RPM_BUILD_ROOT%{_libdir}/libglv.so.0
-ln -s libglv.so.0.4 $RPM_BUILD_ROOT%{_libdir}/libglv.so
+install -m 755 x11/libglv.so.0.5 $RPM_BUILD_ROOT%{_libdir}
+ln -s libglv.so.0.5 $RPM_BUILD_ROOT%{_libdir}/libglv.so.0
+ln -s libglv.so.0.5 $RPM_BUILD_ROOT%{_libdir}/libglv.so
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -47,7 +47,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc ChangeLog LICENSE README
 %{_libdir}/libglv.so
 %{_libdir}/libglv.so.0
-%{_libdir}/libglv.so.0.4
+%{_libdir}/libglv.so.0.5
 %{_includedir}/GL/glv.h
 %{_includedir}/GL/glv_keys.h
 

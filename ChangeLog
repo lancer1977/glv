@@ -1,6 +1,15 @@
                               GLV Change Log
 
 
+v0.5.0 - 22 Dec 2024
+
+    * Add GLV_MODEID_FULL_WINDOW & GLV_MODEID_FIXED_WINDOW.
+    * Support custom cursors with glv_loadCursors() & glv_setCursor().
+    * Emit USB HID key codes if compiled with GLV_HID_KEY defined.
+    * Add glv_setIcon() function for X11.
+    * Implement glv_waitEvents() for Win32.
+
+
 v0.4.0 - 13 Jan 2020
 
     * Add Android implementation.
