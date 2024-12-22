@@ -34,11 +34,56 @@ static HINSTANCE gAppInstance;
 static WPARAM _keyWParam;
 static LPARAM _keyLParam;
 
+#ifdef GLV_HID_KEY
+// USB HID Usage Ids for keyboards (Page 7)
+// https://www.usb.org/hid
+
+static const unsigned char _virtualKeyToHid[176] = {
+    0,0,0,0,0,0,0,0,
+    0x2a,0x2b,      // 0x08-09 BACKSPACE, TAB
+    0,0,            // Reserved
+    0,0x28,         // 0x0C-0D CLEAR, ENTER
+    0,0,            // Reserved
+    0,0,0,          // 0x10-12 SHIFT, CTRL, ALT
+    0x48,0x39,      // 0x13-14 Pause, CapsLock
+    0,0,0,0,0,0,    // 0x15-1A IME keys
+    0x29,0,0,0,0,               // 0x1B-1F ESC, IME...
+    0x32,0x4b,0x4e,0x4d,0x4a,   // 0x20-24 SPACEBAR, PageUp, PageDn, End, Home
+    0x50,0x52,0x4f,0x51,0x77,   // 0x25-29 Left, Up, Right, Down, Select
+       0,0x74,0x46,0x49,0x4c,   // 0x2A-2E Print, Execute, PrScr, Ins, Del
+    0x75,                       // 0x2F Help
+    0x27,0x1e,0x1f,0x20,0x21,0x22,0x23,0x24,0x25,0x26,  // 0x30-39 0-9
+    0,0,0,0,0,0,0,                                      // 0x3A-40 Undefined
+     4, 5, 6, 7, 8, 9,10,11,12,13,                      // 0x41-5A A-Z
+    14,15,16,17,18,19,20,21,22,23,
+    24,25,26,27,28,29,
+    0xe3,0xe7,0x65,0,0x66,                              // 0x5B-5F LWindows...
+    0x62,0x59,0x5a,0x5b,0x5c,0x5d,0x5e,0x5f,0x60,0x61,  // 0x60-69 Keypad 0-9
+    0x55,0x57,0,0x56,0x63,0x54,                         // 0x6A-6F Multiply...
+    //        ^ Separator
+    0x3a,0x3b,0x3c,0x3d,0x3e,0x3f,0x40,0x41,0x42,0x43,  // 0x70-87 F1-F24
+    0x44,0x45,0x68,0x69,0x6a,0x6b,0x6c,0x6d,0x6e,0x6f,
+    0x70,0x71,0x72,0x73,
+    0,0,0,0,0,0,0,0,                    // 0x88-8F Reserved
+    0x83,0x84,                          // 0x90-91 NumLock, Scroll
+    0,0,0,0,0,                          // 0x92-96 OEM specific
+    0,0,0,0,0,0,0,0,0,                  // 0x97-9F Unassigned
+    0xe1,0xe5,0xe0,0xe4,0xe2,0xe6,      // 0xA0-A5 LShift...
+    0,0,0,0,0,0,0,                      // 0xA6-AC Browser keys
+    0x7f,0x81,0x80                      // 0xAD-AF Volume Mute...
+                                        // 0xB0 ...
+};
+
+#define VIRTKEY(vk)  ((vk < 0xB0) ? _virtualKeyToHid[vk] : 0)
+#else
+#define VIRTKEY(vk)  vk
+#endif
+
 #define COPY_KEY(ve,t) \
     _keyLParam = lParam; \
     _keyWParam = wParam; \
         ve.type  = t; \
-        ve.code  = wParam; \
+        ve.code  = VIRTKEY(wParam); \
         ve.state = 0; \
     if( GetKeyState( VK_SHIFT )   & 0x8000 ) ve.state |= GLV_MASK_SHIFT; \
     if( GetKeyState( VK_CONTROL ) & 0x8000 ) ve.state |= GLV_MASK_CTRL; \
