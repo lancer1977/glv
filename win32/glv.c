@@ -753,6 +753,18 @@ static BOOL _monitorSize(int adapter, int* size)
 }
 
 
+#define IN_WINDOW_MODE(view) \
+    (! (view->flags & (FLAG_FULLSCREEN_MODE | FLAG_FULLWINDOW_MODE)))
+
+static void _saveWindowPos(GLView* view)
+{
+    RECT rect;
+    GetWindowRect(view->wnd, &rect);
+    view->winPos[0] = rect.left;
+    view->winPos[1] = rect.top;
+}
+
+
 /**
   Returns non-zero if successful.
   Must not be called from within input handler.
@@ -791,6 +803,9 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
             int size[2];
             HWND wnd = view->wnd;
 
+            if (IN_WINDOW_MODE(view))
+                _saveWindowPos(view);
+
             if (! _monitorSize(0, size)) {
                 size[0] = mode->width;      // Fallback to mode size.
                 size[1] = mode->height;
@@ -807,14 +822,17 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
             LONG style = (mode->id == GLV_MODEID_FIXED_WINDOW) ?
                         WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX :
                         WS_VISIBLE | WS_OVERLAPPEDWINDOW;
+            UINT swpFlags = SWP_FRAMECHANGED;
+
+            if (IN_WINDOW_MODE(view))
+                 swpFlags |= SWP_NOMOVE;
 
             SetRect(&fr, 0, 0, mode->width, mode->height);
             AdjustWindowRect(&fr, style, FALSE);
 
             SetWindowLong(wnd, GWL_STYLE, style);
-            SetWindowPos(wnd, HWND_TOP, 0, 0,
-                         fr.right - fr.left, fr.bottom - fr.top,
-                         SWP_NOMOVE | SWP_FRAMECHANGED);
+            SetWindowPos(wnd, HWND_TOP, view->winPos[0], view->winPos[1],
+                         fr.right - fr.left, fr.bottom - fr.top, swpFlags);
             view->flags &= ~FLAG_FULLWINDOW_MODE;
 #if 0
             if (mode->id == GLV_MODEID_FIXED_WINDOW) {
@@ -848,6 +866,9 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
             devmode.dmPosition.y  = 0;
             devmode.dmFields     |= DM_POSITION;
 #endif
+
+            if (IN_WINDOW_MODE(view))
+                _saveWindowPos(view);
 
             if (ChangeDisplaySettings(&devmode, CDS_FULLSCREEN) ==
                 DISP_CHANGE_SUCCESSFUL) {

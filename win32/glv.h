@@ -46,6 +46,7 @@ typedef struct {
     void (*eventHandler)( void*, GLViewEvent* );
     unsigned short flags;
     int modeId;
+    int winPos[2];
     HICON* customCursor;
     int cursorCount;
 } GLView;
