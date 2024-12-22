@@ -991,8 +991,7 @@ void glv_setEventHandler( GLView* view, GLViewEvent_f func )
 */
 void glv_waitEvent( GLView* view )
 {
-    // TODO
-    (void) view;
+    WaitMessage();
 }
 
 
