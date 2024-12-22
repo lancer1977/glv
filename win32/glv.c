@@ -415,11 +415,15 @@ GLView* glv_create( int attributes, int glVersion )
     wc.cbClsExtra    = 0;
     wc.cbWndExtra    = 0;
     wc.hInstance     = gAppInstance;
-    wc.hIcon         = LoadIcon( NULL, IDI_APPLICATION );
     wc.hCursor       = NULL;        // Must be NULL to override.
     wc.hbrBackground = (HBRUSH) GetStockObject( BLACK_BRUSH );
     wc.lpszMenuName  = NULL;
     wc.lpszClassName = className;
+
+    // See if an icon for GLFW is present; if not use the system default.
+    wc.hIcon = LoadIcon(GetModuleHandle(NULL), "GLFW_ICON");
+    if (! wc.hIcon)
+        wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 
     RegisterClass( &wc );
 
