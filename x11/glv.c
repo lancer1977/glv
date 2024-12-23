@@ -8,11 +8,6 @@
 
 
 /**
-  \mainpage
-
-  Start with the glv.h documentation.
-
-
   \file glv.h
   \brief The GLV library provides a small, cross-platform interface
   for creating a window or fullscreen display with an OpenGL context.
@@ -28,6 +23,9 @@
   \struct GLView glv.h
   \brief The GLView struct defines a single window with an OpenGL context.
 
+  The GLView::user, GLView::width, & GLView::height members are present on
+  all systems.
+  Other documented members are OS specific and considered read-only.
   All undocumented members are private and should not be accessed.
 
 
@@ -36,15 +34,44 @@
   This pointer can be used to attach data to a view (e.g. to use in event
   callback functions).
 
-
   \var int GLView::width
   Pixel width of the view.
   This is a read-only value that should never be directly set by the user.
 
-
   \var int GLView::height
   Pixel height of the view.
   This is a read-only value that should never be directly set by the user.
+
+
+  \defgroup win32 GLView Win32 Specific
+  @{
+  \var HWND GLView::wnd
+  This is a read-only handle to the Windows window.
+
+  \var HDC GLView::dc
+  This is a read-only handle to the Windows device context.
+
+  \var HGLRC GLView::rc
+  This is a read-only handle to the Windows OpenGL context.
+
+  @}
+
+  \defgroup x11 GLView X11 Specific
+  @{
+
+  \var Display* GLView::display
+  This is a read-only pointer to the X11 Display.
+
+  \var int GLView::screen
+  This is a read-only value for the X11 Screen.
+
+  \var Window GLView::window
+  This is a read-only value for the X11 Window.
+
+  \var GLXContext GLView::ctx
+  This is a read-only value for the X11 OpenGL context.
+
+  @}
 
 
   \struct GLViewEvent glv.h
@@ -94,16 +121,16 @@
   \struct GLViewMode glv.h
   \brief The GLViewMode struct holds information about a video mode.
 
-  \def GLV_MODEID_WINDOW
-  A GLViewMode::id of GLV_MODEID_WINDOW means the GLView is a window on
-  the desktop rather than a fullscreen mode.
+  \var GLV_MODEID_WINDOW
+  A GLViewMode::id of GLV_MODEID_WINDOW means the GLView is a resizable window
+  on the desktop rather than a fullscreen mode.
 
-  \def GLV_MODEID_FULL_WINDOW
+  \var GLV_MODEID_FULL_WINDOW
   A GLViewMode::id of GLV_MODEID_FULL_WINDOW will open a borderless window
   that covers the entire desktop at its current resolution.
   The mode width & height must still be set as a normal window fallback.
 
-  \def GLV_MODEID_FIXED_WINDOW
+  \var GLV_MODEID_FIXED_WINDOW
   A GLViewMode::id of GLV_MODEID_FIXED_WINDOW opens a window on the desktop
   with a fixed size.  The window cannot be resized by the user but is
   otherwise the same as #GLV_MODEID_WINDOW.
@@ -253,7 +280,7 @@ static void glv_freeCustomCursors( GLView* view )
 }
 
 /**
-  Define a set of cursors.
+  Define a set of cursors from a single atlas image.
 
   \param areas          Area within the pixels data for each cursor.
                         Each cursor has these six values:
@@ -1855,6 +1882,8 @@ int glv_clipboardText( GLView* view,
   \param argb       Pixel color channel format (0 = RGBA, 1 = ARGB)
 
   \return Non-zero if icon was accepted.
+
+  \ingroup x11
 */
 int glv_setIcon( GLView* view, int width, int height,
                  const unsigned char* pixels, int argb )

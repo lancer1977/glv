@@ -5,7 +5,7 @@ ARCHIVE = libglv-0.5.0
 
 DIST_FILES = \
 	LICENSE \
-	README \
+	README.md \
 	ChangeLog \
 	glv.spec \
 	android/gesture.c \
