@@ -7,7 +7,7 @@ DIST_FILES = \
 	LICENSE \
 	README.md \
 	ChangeLog \
-	glv.spec \
+	dist/glv.spec \
 	android/gesture.c \
 	android/gesture.h \
 	android/glv_activity.c \
