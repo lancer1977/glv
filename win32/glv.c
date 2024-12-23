@@ -314,16 +314,10 @@ static int _createWindow( GLView* view, int fullscreen, int attributes )
     int iFormat;
     DWORD style;
 
-    printf( " fullscreen %d\n", fullscreen );
-    if( fullscreen )
-    {
+    if (fullscreen)
         style = WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
-    }
     else
-    {
         style = WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
-    }
-
     //style |= WS_VISIBLE;
 
 
@@ -427,11 +421,10 @@ GLView* glv_create( int attributes, int glVersion )
 
     RegisterClass( &wc );
 
-#if 0
-    // Required to query LOGPIXELSY.
+    // DPI aware is required to query LOGPIXELSY and have
+    // GLV_MODEID_FULL_WINDOW size properly.
     SetProcessDPIAware();   // Windows Vista
-    //SetProcessDpiAwareness( PROCESS_SYSTEM_DPI_AWARE ); // Windows 8.1
-#endif
+    //SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE); // Windows 8.1
 
     _createWindow( view, 0, attributes );
     view->flags = attributes;
