@@ -122,11 +122,10 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_EVENT_FOCUS_IN      9
 #define GLV_EVENT_FOCUS_OUT     10
 #define GLV_EVENT_EXPOSE        11
-#ifdef ANDROID
+// ANDROID
 #define GLV_EVENT_APP           12
 #define GLV_EVENT_PINCH         13
 #define GLV_EVENT_DPAD          14
-#endif
 #define GLV_EVENT_USER          32
 
 /* GLViewEvent y for GLV_EVENT_WHEEL events */
