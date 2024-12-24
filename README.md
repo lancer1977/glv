@@ -31,12 +31,18 @@ chart:
 Requirements
 ------------
 
-OpenGL.
+For Linux install the OpenGL and X11 development packages.
 
-The X11 version is built with the XFree86 XF86VidMode extension by default,
-but this can be disabled in the Makefile.
+Fedora:
 
-The Windows version has been built with MinGW and Visual C++ using NMAKE.
+    sudo dnf install libglvnd-devel libXcursor-devel libXxf86vm-devel
+
+Ubuntu:
+
+    sudo apt install libgl-dev libxcursor-dev libxxf86vm-dev
+
+The X11 version is built without the XFree86 XF86VidMode extension by default,
+but this can be enabled in the Makefile by defining `USE_XF86VMODE`.
 
 
 Installation
