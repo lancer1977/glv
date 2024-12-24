@@ -1073,6 +1073,3 @@ int glv_clipboardText( GLView* view,
     CloseClipboard();
     return 1;
 }
-
-
-/*EOF*/
