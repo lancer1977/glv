@@ -74,6 +74,22 @@
   @}
 
 
+  \var GLV_ATTRIB_DOUBLEBUFFER
+  Make a pair of color buffers which alternate when glv_swapBuffers() is called.
+
+  \var GLV_ATTRIB_STENCIL
+  Adds a stencil buffer.
+
+  \var GLV_ATTRIB_MULTISAMPLE
+  Adds a multisample buffer.
+
+  \var GLV_ATTRIB_ES
+  Create an OpenGL ES context.
+
+  \var GLV_ATTRIB_DEBUG
+  Create a debug context.
+
+
   \struct GLViewEvent glv.h
   \brief The GLViewEvent struct is passed to the event handler callback.
 
@@ -383,13 +399,14 @@ static void glv_nullHandler( void* v, GLViewEvent* e )
   A valid view may be returned even if all attributes could not be set.
   Use glv_attributes() to check which are set.
 
-  \param attributes The possible attributes are GLV_ATTRIB_DOUBLEBUFFER,
-                    GLV_ATTRIB_STENCIL, GLV_ATTRIB_MULTISAMPLE, GLV_ATTRIB_ES,
-                    and GLV_ATTRIB_DEBUG.  Only RGBA visuals will be created.
+  \param attributes The possible attributes are #GLV_ATTRIB_DOUBLEBUFFER,
+                    #GLV_ATTRIB_STENCIL, #GLV_ATTRIB_MULTISAMPLE,
+                    #GLV_ATTRIB_ES, and #GLV_ATTRIB_DEBUG.
+                    Only RGBA visuals will be created.
 
   \param glVersion  This contains the OpenGL major version in bits 8-15 and
-                    the minor in bits 0-7, so version 3.2 is 0x302.
-                    If zero, no specific version is requested.
+                    the minor in bits 0-7. For example version 3.2 is 0x302.
+                    If this is zero then no specific version is requested.
 */
 GLView* glv_create( int attributes, int glVersion )
 {
@@ -1150,7 +1167,7 @@ mode.id     = GLV_MODEID_WINDOW;
 mode.width  = 640;
 mode.height = 480;
 
-glv_changeMode( &view, &mode );
+glv_changeMode(view, &mode);
   \endcode
 
   \sa glv_queryModes()
@@ -1557,14 +1574,13 @@ static const unsigned char _hidUsageId[256] = {
   \code
     // Example main loop.
     running = 1;
-    while( running )
-    {
-        glv_handleEvents( &view );
+    while (running) {
+        glv_handleEvents(view);
 
         // Update simulation...
         // Draw frame using GL calls...
 
-        glv_swapBuffers( &view );
+        glv_swapBuffers(view);
     }
   \endcode
 
