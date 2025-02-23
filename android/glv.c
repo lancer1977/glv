@@ -285,6 +285,11 @@ void glv_resize( GLView* view, int w, int h )
 }
 
 
+void glv_setSizeLimits( GLView* view, const int* minSize, const int* maxSize )
+{
+}
+
+
 /**
   Show window on top of all other windows.
 */

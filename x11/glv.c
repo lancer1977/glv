@@ -1,7 +1,7 @@
 /*===========================================================================/
 
   GLV Library for X11
-  Copyright (C) 2003-2023  Karl Robillard
+  Copyright (C) 2003-2025  Karl Robillard
   SPDX-License-Identifier: MIT
 
 /===========================================================================*/
@@ -1019,13 +1019,23 @@ static void _stateQuery(const GLView* view)
 #endif
 
 
-static void _resetSizeHints(GLView* view)
+static void _setSizeHints(const GLView* view, const int* minSize, const int* maxSize)
 {
-    XSizeHints* xsh = XAllocSizeHints();
-    if (xsh) {
-        xsh->flags = 0;
-        XSetWMNormalHints(view->display, view->window, xsh);
-        XFree(xsh);
+    XSizeHints* hints = XAllocSizeHints();
+    if (hints) {
+        hints->flags = 0;
+        if (minSize) {
+            hints->flags |= PMinSize;
+            hints->min_width  = minSize[0];
+            hints->min_height = minSize[1];
+        }
+        if (maxSize) {
+            hints->flags |= PMaxSize;
+            hints->max_width  = maxSize[0];
+            hints->max_height = maxSize[1];
+        }
+        XSetWMNormalHints(view->display, view->window, hints);
+        XFree(hints);
     }
 }
 
@@ -1276,7 +1286,7 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
         {
             /* Ensure the window is resizable or some window managers may
                not transition to the fullscreen state. */
-            _resetSizeHints(view);
+            _setSizeHints(view, NULL, NULL);
 
             /* Fallback to mode size if fullscreen fails. */
             if (! view->width)
@@ -1295,17 +1305,10 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
                 fullWindowTransition = 1;
             }
 
-            if( mode->id == GLV_MODEID_FIXED_WINDOW ) {
-                XSizeHints* xsh = XAllocSizeHints();
-                if (xsh) {
-                    xsh->flags = PMinSize | PMaxSize;
-                    xsh->min_width  = xsh->max_width  = mode->width;
-                    xsh->min_height = xsh->max_height = mode->height;
-                    XSetWMNormalHints(disp, window, xsh);
-                    XFree(xsh);
-                }
-            } else
-                _resetSizeHints(view);
+            if(mode->id == GLV_MODEID_FIXED_WINDOW)
+                _setSizeHints(view, &mode->width, &mode->width);
+            else
+                _setSizeHints(view, NULL, NULL);
 
             XResizeWindow( disp, window, mode->width, mode->height );
         }
@@ -1420,6 +1423,21 @@ void glv_move( GLView* view, int x, int y )
 void glv_resize( GLView* view, int w, int h )
 {
     XResizeWindow( view->display, view->window, w, h );
+}
+
+
+/**
+  Constrain window dimensions.
+  This should only be called when the view was created with #GLV_MODEID_WINDOW.
+
+  \param minSize    Pointer to minimum width & height, or NULL to clear.
+  \param maxSize    Pointer to maximum width & height, or NULL to clear.
+*/
+void glv_setSizeLimits( GLView* view, const int* minSize, const int* maxSize )
+{
+    if (view->flags & (FLAG_FULLSCREEN_MODE | FLAG_FULLWINDOW_MODE))
+        return;
+    _setSizeHints(view, minSize, maxSize);
 }
 
 

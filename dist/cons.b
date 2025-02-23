@@ -10,7 +10,7 @@ write %glv.c rejoin [
 /*===========================================================================/
 
   GLV Library for Windows & X11
-  Copyright (C) 2003-2024  Karl Robillard
+  Copyright (C) 2003-2025  Karl Robillard
   SPDX-License-Identifier: MIT
 
   Documentation is at https://wickedsmoke.codeberg.page/glv_doc/

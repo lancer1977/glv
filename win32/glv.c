@@ -166,6 +166,41 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
             printf( "WM_CHAR %c\n", wParam );
             break;
 #endif
+#if 0
+        case WM_SIZING:
+            int edge = (int) wParam;
+            RECT* area = (RECT*) lParam;
+            break;
+#endif
+
+        case WM_GETMINMAXINFO:
+            if ((_cv->flags & (FLAG_FULLSCREEN_MODE | FLAG_FULLWINDOW_MODE)) == 0) {
+                RECT client, win;
+                int borderW, borderH, clientW, clientH;
+
+                GetClientRect(hWnd, &client);
+                clientW = client.right - client.left;
+                clientH = client.bottom - client.top;
+
+                if (clientW && clientH) {
+                    MINMAXINFO* info = (MINMAXINFO*) lParam;
+
+                    GetWindowRect(hWnd, &win);
+                    borderW = (win.right - win.left) - clientW;
+                    borderH = (win.bottom - win.top) - clientH;
+
+                    if (_cv->minW) {
+                        info->ptMinTrackSize.x = _cv->minW + borderW;
+                        info->ptMinTrackSize.y = _cv->minH + borderH;
+                    }
+                    if (_cv->maxW) {
+                        info->ptMaxTrackSize.x = _cv->maxW + borderW;
+                        info->ptMaxTrackSize.y = _cv->maxH + borderH;
+                    }
+                    return 0;
+                }
+            }
+            return 1;
 
         case WM_KEYDOWN:
         case WM_SYSKEYDOWN:
@@ -940,6 +975,24 @@ void glv_resize( GLView* view, int w, int h )
     RECT rect;
     GetWindowRect( view->wnd, &rect );
     MoveWindow( view->wnd, rect.left, rect.top, w, h, FALSE );
+}
+
+
+void glv_setSizeLimits( GLView* view, const int* minSize, const int* maxSize )
+{
+    if (view->flags & (FLAG_FULLSCREEN_MODE | FLAG_FULLWINDOW_MODE))
+        return;
+    if (minSize) {
+        view->minW = minSize[0];
+        view->minH = minSize[1];
+    } else
+        view->minW = 0;
+
+    if (maxSize) {
+        view->maxW = maxSize[0];
+        view->maxH = maxSize[1];
+    } else
+        view->maxW = 0;
 }
 
 

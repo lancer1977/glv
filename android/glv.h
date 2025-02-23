@@ -3,7 +3,7 @@
 /*===========================================================================/
 
   GLV Library for android
-  Copyright (C) 2003-2024  Karl Robillard
+  Copyright (C) 2003-2025  Karl Robillard
   SPDX-License-Identifier: MIT
 
 /===========================================================================*/
@@ -138,6 +138,7 @@ extern void glv_hide(GLView* view);
 extern void glv_setTitle(GLView* view, const char* title);
 extern void glv_move(GLView* view, int x, int y);
 extern void glv_resize(GLView* view, int w, int h);
+extern void glv_setSizeLimits(GLView* view, const int* minSize, const int* maxSize);
 extern void glv_raise(GLView* view);
 extern void glv_iconify(GLView* view);
 extern void glv_showCursor(GLView* view, int on);
