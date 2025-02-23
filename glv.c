@@ -1,7 +1,7 @@
 /*===========================================================================/
 
   GLV Library for Windows & X11
-  Copyright (C) 2003-2024  Karl Robillard
+  Copyright (C) 2003-2025  Karl Robillard
   SPDX-License-Identifier: MIT
 
   Documentation is at https://wickedsmoke.codeberg.page/glv_doc/
@@ -168,6 +168,41 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
             printf( "WM_CHAR %c\n", wParam );
             break;
 #endif
+#if 0
+        case WM_SIZING:
+            int edge = (int) wParam;
+            RECT* area = (RECT*) lParam;
+            break;
+#endif
+
+        case WM_GETMINMAXINFO:
+            if ((_cv->flags & (FLAG_FULLSCREEN_MODE | FLAG_FULLWINDOW_MODE)) == 0) {
+                RECT client, win;
+                int borderW, borderH, clientW, clientH;
+
+                GetClientRect(hWnd, &client);
+                clientW = client.right - client.left;
+                clientH = client.bottom - client.top;
+
+                if (clientW && clientH) {
+                    MINMAXINFO* info = (MINMAXINFO*) lParam;
+
+                    GetWindowRect(hWnd, &win);
+                    borderW = (win.right - win.left) - clientW;
+                    borderH = (win.bottom - win.top) - clientH;
+
+                    if (_cv->minW) {
+                        info->ptMinTrackSize.x = _cv->minW + borderW;
+                        info->ptMinTrackSize.y = _cv->minH + borderH;
+                    }
+                    if (_cv->maxW) {
+                        info->ptMaxTrackSize.x = _cv->maxW + borderW;
+                        info->ptMaxTrackSize.y = _cv->maxH + borderH;
+                    }
+                    return 0;
+                }
+            }
+            return 1;
 
         case WM_KEYDOWN:
         case WM_SYSKEYDOWN:
@@ -945,6 +980,24 @@ void glv_resize( GLView* view, int w, int h )
 }
 
 
+void glv_setSizeLimits( GLView* view, const int* minSize, const int* maxSize )
+{
+    if (view->flags & (FLAG_FULLSCREEN_MODE | FLAG_FULLWINDOW_MODE))
+        return;
+    if (minSize) {
+        view->minW = minSize[0];
+        view->minH = minSize[1];
+    } else
+        view->minW = 0;
+
+    if (maxSize) {
+        view->maxW = maxSize[0];
+        view->maxH = maxSize[1];
+    } else
+        view->maxW = 0;
+}
+
+
 /**
   Show window on top of all other windows.
 */
@@ -1099,9 +1152,9 @@ int glv_clipboardText( GLView* view,
 #define EMASK_KEY       KeyPressMask | KeyReleaseMask
 #define EMASK_MOUSE     ButtonPressMask | ButtonReleaseMask | PointerMotionMask
 #ifdef USE_XF86VMODE
-#define EMASK_OTHER     ExposureMask | StructureNotifyMask | PropertyChangeMask
+#define EMASK_OTHER     ExposureMask | FocusChangeMask | StructureNotifyMask | PropertyChangeMask
 #else
-#define EMASK_OTHER     ExposureMask | StructureNotifyMask
+#define EMASK_OTHER     ExposureMask | FocusChangeMask | StructureNotifyMask
 #endif
 
 #define DEFAULT_EVENT_MASK  (EMASK_KEY | EMASK_MOUSE | EMASK_OTHER)
@@ -1296,13 +1349,14 @@ static void glv_nullHandler( void* v, GLViewEvent* e )
   A valid view may be returned even if all attributes could not be set.
   Use glv_attributes() to check which are set.
 
-  \param attributes The possible attributes are GLV_ATTRIB_DOUBLEBUFFER,
-                    GLV_ATTRIB_STENCIL, GLV_ATTRIB_MULTISAMPLE, GLV_ATTRIB_ES,
-                    and GLV_ATTRIB_DEBUG.  Only RGBA visuals will be created.
+  \param attributes The possible attributes are #GLV_ATTRIB_DOUBLEBUFFER,
+                    #GLV_ATTRIB_STENCIL, #GLV_ATTRIB_MULTISAMPLE,
+                    #GLV_ATTRIB_ES, and #GLV_ATTRIB_DEBUG.
+                    Only RGBA visuals will be created.
 
   \param glVersion  This contains the OpenGL major version in bits 8-15 and
-                    the minor in bits 0-7, so version 3.2 is 0x302.
-                    If zero, no specific version is requested.
+                    the minor in bits 0-7. For example version 3.2 is 0x302.
+                    If this is zero then no specific version is requested.
 */
 GLView* glv_create( int attributes, int glVersion )
 {
@@ -1915,13 +1969,23 @@ static void _stateQuery(const GLView* view)
 #endif
 
 
-static void _resetSizeHints(GLView* view)
+static void _setSizeHints(const GLView* view, const int* minSize, const int* maxSize)
 {
-    XSizeHints* xsh = XAllocSizeHints();
-    if (xsh) {
-        xsh->flags = 0;
-        XSetWMNormalHints(view->display, view->window, xsh);
-        XFree(xsh);
+    XSizeHints* hints = XAllocSizeHints();
+    if (hints) {
+        hints->flags = 0;
+        if (minSize) {
+            hints->flags |= PMinSize;
+            hints->min_width  = minSize[0];
+            hints->min_height = minSize[1];
+        }
+        if (maxSize) {
+            hints->flags |= PMaxSize;
+            hints->max_width  = maxSize[0];
+            hints->max_height = maxSize[1];
+        }
+        XSetWMNormalHints(view->display, view->window, hints);
+        XFree(hints);
     }
 }
 
@@ -2063,7 +2127,7 @@ mode.id     = GLV_MODEID_WINDOW;
 mode.width  = 640;
 mode.height = 480;
 
-glv_changeMode( &view, &mode );
+glv_changeMode(view, &mode);
   \endcode
 
   \sa glv_queryModes()
@@ -2172,7 +2236,7 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
         {
             /* Ensure the window is resizable or some window managers may
                not transition to the fullscreen state. */
-            _resetSizeHints(view);
+            _setSizeHints(view, NULL, NULL);
 
             /* Fallback to mode size if fullscreen fails. */
             if (! view->width)
@@ -2191,17 +2255,10 @@ int glv_changeMode( GLView* view, const GLViewMode* mode )
                 fullWindowTransition = 1;
             }
 
-            if( mode->id == GLV_MODEID_FIXED_WINDOW ) {
-                XSizeHints* xsh = XAllocSizeHints();
-                if (xsh) {
-                    xsh->flags = PMinSize | PMaxSize;
-                    xsh->min_width  = xsh->max_width  = mode->width;
-                    xsh->min_height = xsh->max_height = mode->height;
-                    XSetWMNormalHints(disp, window, xsh);
-                    XFree(xsh);
-                }
-            } else
-                _resetSizeHints(view);
+            if(mode->id == GLV_MODEID_FIXED_WINDOW)
+                _setSizeHints(view, &mode->width, &mode->width);
+            else
+                _setSizeHints(view, NULL, NULL);
 
             XResizeWindow( disp, window, mode->width, mode->height );
         }
@@ -2316,6 +2373,21 @@ void glv_move( GLView* view, int x, int y )
 void glv_resize( GLView* view, int w, int h )
 {
     XResizeWindow( view->display, view->window, w, h );
+}
+
+
+/**
+  Constrain window dimensions.
+  This should only be called when the view was created with #GLV_MODEID_WINDOW.
+
+  \param minSize    Pointer to minimum width & height, or NULL to clear.
+  \param maxSize    Pointer to maximum width & height, or NULL to clear.
+*/
+void glv_setSizeLimits( GLView* view, const int* minSize, const int* maxSize )
+{
+    if (view->flags & (FLAG_FULLSCREEN_MODE | FLAG_FULLWINDOW_MODE))
+        return;
+    _setSizeHints(view, minSize, maxSize);
 }
 
 
@@ -2470,14 +2542,13 @@ static const unsigned char _hidUsageId[256] = {
   \code
     // Example main loop.
     running = 1;
-    while( running )
-    {
-        glv_handleEvents( &view );
+    while (running) {
+        glv_handleEvents(view);
 
         // Update simulation...
         // Draw frame using GL calls...
 
-        glv_swapBuffers( &view );
+        glv_swapBuffers(view);
     }
   \endcode
 
@@ -2627,21 +2698,20 @@ void glv_handleEvents( GLView* view )
 
             case FocusIn:
                 /* event.xfocus */
-                ve.type  = GLV_EVENT_FOCUS_IN;
-                view->eventHandler( view, &ve );
+                ve.type = GLV_EVENT_FOCUS_IN;
+send:
+                view->eventHandler(view, &ve);
                 break;
 
             case FocusOut:
                 /* event.xfocus */
-                ve.type  = GLV_EVENT_FOCUS_OUT;
-                view->eventHandler( view, &ve );
-                break;
+                ve.type = GLV_EVENT_FOCUS_OUT;
+                goto send;
 
             case Expose:
-                if( event.xexpose.count == 0 )
-                {
+                if (event.xexpose.count == 0) {
                     ve.type = GLV_EVENT_EXPOSE;
-                    view->eventHandler( view, &ve );
+                    goto send;
                 }
                 break;
 #if 0
