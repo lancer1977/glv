@@ -202,9 +202,9 @@
 #define EMASK_KEY       KeyPressMask | KeyReleaseMask
 #define EMASK_MOUSE     ButtonPressMask | ButtonReleaseMask | PointerMotionMask
 #ifdef USE_XF86VMODE
-#define EMASK_OTHER     ExposureMask | StructureNotifyMask | PropertyChangeMask
+#define EMASK_OTHER     ExposureMask | FocusChangeMask | StructureNotifyMask | PropertyChangeMask
 #else
-#define EMASK_OTHER     ExposureMask | StructureNotifyMask
+#define EMASK_OTHER     ExposureMask | FocusChangeMask | StructureNotifyMask
 #endif
 
 #define DEFAULT_EVENT_MASK  (EMASK_KEY | EMASK_MOUSE | EMASK_OTHER)
@@ -1748,21 +1748,20 @@ void glv_handleEvents( GLView* view )
 
             case FocusIn:
                 /* event.xfocus */
-                ve.type  = GLV_EVENT_FOCUS_IN;
-                view->eventHandler( view, &ve );
+                ve.type = GLV_EVENT_FOCUS_IN;
+send:
+                view->eventHandler(view, &ve);
                 break;
 
             case FocusOut:
                 /* event.xfocus */
-                ve.type  = GLV_EVENT_FOCUS_OUT;
-                view->eventHandler( view, &ve );
-                break;
+                ve.type = GLV_EVENT_FOCUS_OUT;
+                goto send;
 
             case Expose:
-                if( event.xexpose.count == 0 )
-                {
+                if (event.xexpose.count == 0) {
                     ve.type = GLV_EVENT_EXPOSE;
-                    view->eventHandler( view, &ve );
+                    goto send;
                 }
                 break;
 #if 0
