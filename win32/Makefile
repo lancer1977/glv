@@ -12,10 +12,10 @@ LINK	 = link.exe
 
 #------ Target settings
 
-GLV_CFLAGS   = /nologo -W3 -Zi 
+GLV_CFLAGS   = /nologo /W3 /Zi 
 GLV_INCPATH  = /I.
 GLV_LFLAGS   = /nologo /incremental:no /subsystem:windows /DEBUG
-GLV_OBJECTS  = 	glv.o
+GLV_OBJECTS  = glv.o
 
 
 #------ Build rules

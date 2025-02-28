@@ -71,8 +71,6 @@ To build a shared library run the following commands from the command prompt:
 
     cd win32
     nmake
-    cd ..\examples
-    nmake -f Makefile.vc
 
 
 ### Android

@@ -301,7 +301,7 @@ extern int main(int, char**);
 int WINAPI WinMain(HINSTANCE hi, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
                    int nCmdShow)
 {
-    const int MAX_NUM_ARGVS = 20;
+#define MAX_NUM_ARGVS 20
     int argc = 1;
     char* argv[MAX_NUM_ARGVS];
     (void) nCmdShow;

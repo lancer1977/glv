@@ -17,9 +17,9 @@
 
 
 enum ActionFlags {
-    Quit           = 1,
-    ShowWindow     = 2,
-    ShowFullWindow = 4
+    ActQuit           = 1,
+    ActShowWindow     = 2,
+    ActShowFullWindow = 4
 };
 
 
@@ -86,16 +86,16 @@ void eventHandler( GLView* view, GLViewEvent* event )
 
         case GLV_EVENT_KEY_DOWN:
             if( event->code == KEY_Escape )
-                *actions |= Quit;
+                *actions |= ActQuit;
             else if( event->code == KEY_f )
-                *actions |= ShowFullWindow;
+                *actions |= ActShowFullWindow;
             else if( event->code == KEY_w )
-                *actions |= ShowWindow;
+                *actions |= ActShowWindow;
             break;
 
         case GLV_EVENT_CLOSE:
             printf( "testClose\n" );
-            *actions |= Quit;
+            *actions |= ActQuit;
             break;
     }
 }
@@ -157,16 +157,16 @@ int main( int argc, char** argv )
 
         view->user = &actions;
 
-        while( ! (actions & Quit) )
+        while( ! (actions & ActQuit) )
         {
             actions = 0;
             glv_waitEvent( view );
             glv_handleEvents( view );
 
-            if( actions & (ShowWindow|ShowFullWindow) )
+            if( actions & (ActShowWindow | ActShowFullWindow) )
             {
-                mode.id = (actions & ShowWindow) ? GLV_MODEID_WINDOW :
-                                                   GLV_MODEID_FULL_WINDOW;
+                mode.id = (actions & ActShowWindow) ? GLV_MODEID_WINDOW :
+                                                      GLV_MODEID_FULL_WINDOW;
                 printf( "changeMode %d\n", mode.id );
                 glv_changeMode( view, &mode );
             }
