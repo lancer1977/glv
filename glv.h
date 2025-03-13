@@ -132,12 +132,13 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 /* GLViewEvent y for GLV_EVENT_WHEEL events */
 #define GLV_WHEEL_DELTA     120
 
-#ifdef ANDROID
 /* GLViewEvent code for GLV_EVENT_BUTTON_DOWN/UP events */
+// These match X11 Button1, Button2 & Button3.
 #define GLV_BUTTON_LEFT     1
 #define GLV_BUTTON_MIDDLE   2
 #define GLV_BUTTON_RIGHT    3
 
+#ifdef ANDROID
 /* GLViewEvent state masks */
 #define GLV_MASK_SHIFT      0x01        // AMETA_SHIFT_ON
 #define GLV_MASK_CTRL       0x1000      // AMETA_CTRL_ON
@@ -158,11 +159,6 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 
 #elif defined(_WIN32)
 
-/* GLViewEvent code for GLV_EVENT_BUTTON_DOWN/UP events */
-#define GLV_BUTTON_LEFT     1
-#define GLV_BUTTON_RIGHT    2
-#define GLV_BUTTON_MIDDLE   3
-
 /* GLViewEvent state masks */
 // NOTE: There is an MK_ALT defined in OLEIDL.H as 0x20 but aparently this
 // bit is not set for mouse events.
@@ -177,11 +173,6 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_MASK_RIGHT      MK_RBUTTON
 
 #else   // X11
-
-/* GLViewEvent code for GLV_EVENT_BUTTON_DOWN/UP events */
-#define GLV_BUTTON_LEFT     Button1
-#define GLV_BUTTON_MIDDLE   Button2
-#define GLV_BUTTON_RIGHT    Button3
 
 /* GLViewEvent state masks */
 #define GLV_MASK_SHIFT      ShiftMask

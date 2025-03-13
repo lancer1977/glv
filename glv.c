@@ -236,6 +236,7 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
                 case WM_MBUTTONDOWN: ve.code = GLV_BUTTON_MIDDLE; break;
                 default:             ve.code = 0;                 break;
             }
+mouse_state:
             ve.state = LOWORD(wParam);
             ve.x     = LOWORD(lParam);
             ve.y     = HIWORD(lParam);
@@ -245,9 +246,6 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
         case WM_LBUTTONUP:
         case WM_RBUTTONUP:
         case WM_MBUTTONUP:
-            //event.state = _mapState( wParam );
-            //event.setXY( LOWORD(lParam), _displayH - HIWORD(lParam) );
-
             ve.type  = GLV_EVENT_BUTTON_UP;
             switch( message )
             {
@@ -256,20 +254,12 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
                 case WM_MBUTTONUP: ve.code = GLV_BUTTON_MIDDLE; break;
                 default:           ve.code = 0;                 break;
             }
-            ve.state = LOWORD(wParam);
-            ve.x     = LOWORD(lParam);
-            ve.y     = HIWORD(lParam);
-            _cv->eventHandler( _cv, &ve );
-            break;
+            goto mouse_state;
 
         case WM_MOUSEMOVE:
             ve.type  = GLV_EVENT_MOTION;
             ve.code  = 0;
-            ve.state = LOWORD(wParam);
-            ve.x     = LOWORD(lParam);
-            ve.y     = HIWORD(lParam);
-            _cv->eventHandler( _cv, &ve );
-            break;
+            goto mouse_state;
 
         case WM_MOUSEWHEEL:
             ve.type  = GLV_EVENT_WHEEL;
@@ -1043,6 +1033,7 @@ void glv_setEventHandler( GLView* view, GLViewEvent_f func )
 */
 void glv_waitEvent( GLView* view )
 {
+    (void) view;
     WaitMessage();
 }
 
