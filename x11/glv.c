@@ -1638,6 +1638,13 @@ void glv_handleEvents( GLView* view )
                 }
                 break;
 
+            case UnmapNotify:
+            case MapNotify:
+                ve.type = GLV_EVENT_ICONIFY;
+                ve.state = (event.type == UnmapNotify) ? 1 : 0;
+                view->eventHandler(view, &ve);
+                break;
+
             case ConfigureNotify:
                 if( event.xconfigure.window == view->window )
                 {

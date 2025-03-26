@@ -17,6 +17,7 @@
 #define FLAG_FULLSCREEN_MODE        0x0010
 #define FLAG_FULLWINDOW_MODE        0x0020
 #define FLAG_FILTER_REPEAT          0x0040
+#define FLAG_MINIMIZED              0x0080
 
 
 static GLView* _cv = 0;
@@ -133,17 +134,20 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
 
         case WM_SIZE:
         {
+            int mini = (wParam == SIZE_MINIMIZED) ? FLAG_MINIMIZED : 0;
+            int flags = _cv->flags;
             int w, h;
+
+            if ((flags & FLAG_MINIMIZED) != mini) {
+                _cv->flags = (flags & ~FLAG_MINIMIZED) | mini;
+                ve.type  = GLV_EVENT_ICONIFY;
+                ve.state = mini ? 1 : 0;
+                _cv->eventHandler(_cv, &ve);
+            }
 
             w = LOWORD(lParam);
             h = HIWORD(lParam);
 
-            /*
-            if( SIZE_MAXHIDE==wParam || SIZE_MINIMIZED==wParam )
-                active = false;
-            else
-                active = true;
-            */
             //printf( "WM_SIZE %dx%d\n", LOWORD(lParam), HIWORD(lParam) );
             if( (_cv->width != w) || (_cv->height != h) )
             {

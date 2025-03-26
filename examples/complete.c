@@ -254,6 +254,10 @@ void eventHandler( GLView* view, GLViewEvent* event )
             printf( "testExpose\n" );
             redraw();
             break;
+
+        case GLV_EVENT_ICONIFY:
+            printf( "testIconify %d\n", event->state );
+            break;
     }
 }
 
