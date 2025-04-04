@@ -145,6 +145,8 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
                 ve.type  = GLV_EVENT_ICONIFY;
                 ve.state = mini ? 1 : 0;
                 _cv->eventHandler(_cv, &ve);
+                if (mini)
+                    break;  // Don't send resize 0,0.
             }
 
             w = LOWORD(lParam);
