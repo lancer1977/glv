@@ -1,13 +1,14 @@
 /*===========================================================================/
 
   GLV Library for Windows
-  Copyright (C) 2003-2024  Karl Robillard
+  Copyright (C) 2003-2025  Karl Robillard
   SPDX-License-Identifier: MIT
 
 /===========================================================================*/
 
 
 #include <windows.h>
+#include <windowsx.h>
 #include <zmouse.h>
 #include <stdio.h>
 #include <glv.h>
@@ -28,6 +29,14 @@ static void glv_nullHandler( void* v, GLViewEvent* e )
     (void) e;
 }
 
+static void glv_setActiveCursor(const GLView* view)
+{
+    int ci = view->activeCursor;
+    if (ci < 0)
+        SetCursor(LoadCursor(NULL, IDC_ARROW));
+    else
+        SetCursor(view->customCursor[ci]);
+}
 
 /*--------------------------------------------------------------------------*/
 
@@ -164,6 +173,20 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
         }
             break;
 
+        case WM_SETCURSOR:
+        {
+            // WM_SETCURSOR is sent on every WM_MOUSEMOVE, so we track lastHT
+            // to minimize the calls to glv_setActiveCursor.
+            WORD last = _cv->lastHT;
+            WORD ht = LOWORD(lParam);
+            _cv->lastHT = ht;
+            if (ht == HTCLIENT && last != HTCLIENT) {
+                glv_setActiveCursor(_cv);
+                return TRUE;
+            }
+        }
+            goto def_proc;
+
 #if 0
         /* A WM_CHAR event is sent after a WM_KEYDOWN event of an ASCII key. */
         case WM_CHAR:
@@ -242,8 +265,8 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
             }
 mouse_state:
             ve.state = LOWORD(wParam);
-            ve.x     = LOWORD(lParam);
-            ve.y     = HIWORD(lParam);
+            ve.x     = GET_X_LPARAM(lParam);
+            ve.y     = GET_Y_LPARAM(lParam);
             _cv->eventHandler( _cv, &ve );
             break;
 
@@ -277,7 +300,8 @@ mouse_state:
             break;
 
         default:
-            return DefWindowProc( hWnd, message, wParam, lParam );
+def_proc:
+            return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
 }
@@ -431,6 +455,7 @@ GLView* glv_create( int attributes, int glVersion )
     view->width  = 640;
     view->height = 480;
     view->modeId = -2;
+    view->activeCursor = GLV_CURSOR_ARROW;
     view->eventHandler = glv_nullHandler;
 
 
@@ -638,10 +663,8 @@ int glv_loadCursors( GLView* view, const short* areas, int count,
 void glv_setCursor( GLView* view, int cursorIndex )
 {
     if (cursorIndex < view->cursorCount) {
-        if (cursorIndex < 0)
-            SetCursor(LoadCursor(NULL, IDC_ARROW));
-        else
-            SetCursor(view->customCursor[cursorIndex]);
+        view->activeCursor = cursorIndex;
+        glv_setActiveCursor(view);
     }
 }
 #endif
