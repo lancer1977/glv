@@ -17,7 +17,6 @@
 #define FLAG_ATTRIB                 0x0007
 #define FLAG_FULLSCREEN_MODE        0x0010
 #define FLAG_FULLWINDOW_MODE        0x0020
-#define FLAG_FILTER_REPEAT          0x0040
 #define FLAG_MINIMIZED              0x0080
 
 
@@ -190,8 +189,6 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
 #if 0
         /* A WM_CHAR event is sent after a WM_KEYDOWN event of an ASCII key. */
         case WM_CHAR:
-            if( (_cv->flags & FLAG_FILTER_REPEAT) && (lParam & (1 << 30)) )
-                break;
             printf( "WM_CHAR %c\n", wParam );
             break;
 #endif
@@ -233,11 +230,10 @@ WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
 
         case WM_KEYDOWN:
         case WM_SYSKEYDOWN:
-            if( (_cv->flags & FLAG_FILTER_REPEAT) && (lParam & (1 << 30)) )
-                break;
-
             //printf( "WM_KEYDOWN %08x %08x\n", lParam, wParam );
             COPY_KEY( ve, GLV_EVENT_KEY_DOWN )
+            if (HIWORD(lParam) & KF_REPEAT)
+                ve.state |= GLV_MASK_REPEAT;
             _cv->eventHandler( _cv, &ve );
 
             //if( wParam == VK_ESCAPE )
@@ -1079,15 +1075,6 @@ void glv_handleEvents( GLView* view )
         TranslateMessage( &msg );
         DispatchMessage( &msg );
     }
-}
-
-
-void glv_filterRepeatKeys( GLView* view, int on )
-{
-    if( on )
-        view->flags |= FLAG_FILTER_REPEAT;
-    else
-        view->flags &= ~FLAG_FILTER_REPEAT;
 }
 
 

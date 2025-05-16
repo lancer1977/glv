@@ -29,7 +29,6 @@ int quit = 0;
 int change = 0;
 int cursorOn = 1;
 int windowed = 0;
-int kfilter = 1;
 GLView* gView;
 
 
@@ -190,7 +189,8 @@ void eventHandler( GLView* view, GLViewEvent* event )
         {
             struct KeyStr* ks = keyStrings;
 
-            printf( "testKeyDown %d %c\n", event->code, KEY_ASCII(event) );
+            printf( "testKeyDown %d 0x%x %c\n", event->code, event->state,
+                    KEY_ASCII(event) );
 
             while( ks->str )
             {
@@ -215,12 +215,6 @@ void eventHandler( GLView* view, GLViewEvent* event )
                 case KEY_c:
                     cursorOn ^= 1;
                     glv_showCursor( view, cursorOn );
-                    break;
-
-                case KEY_r:
-                    kfilter ^= 1;
-                    glv_filterRepeatKeys( view, kfilter );
-                    printf( "repeat filter %s\n", kfilter ? "on" : "off" );
                     break;
 
                 case KEY_v:
@@ -288,8 +282,6 @@ int main( int argc, char** argv )
     glv_setTitle( gView, "GLView Test" );
 
     glv_setEventHandler( gView, eventHandler );
-
-    glv_filterRepeatKeys( gView, kfilter );
 
 
     /* Default to a 640x480 window. */

@@ -16,7 +16,6 @@
 
 
 #define FLAG_ATTRIB                 0x00ff
-#define FLAG_FILTER_REPEAT          0x0100
 
 
 extern struct android_app* gGlvApp;
@@ -398,19 +397,6 @@ void glv_handleEvents( GLView* view )
     while ((ve = rqueue_removeHead_GLViewEvent(queue)))
         view->eventHandler( view, ve );
     }
-}
-
-
-/**
-  Enables or disables key repeat for the view.
-  Repeat is on by default.
-*/
-void glv_filterRepeatKeys( GLView* view, int on )
-{
-    if( on )
-        view->flags |= FLAG_FILTER_REPEAT;
-    else
-        view->flags &= ~FLAG_FILTER_REPEAT;
 }
 
 

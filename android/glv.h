@@ -13,8 +13,8 @@
 #include <EGL/egl.h>
 #include <GLES3/gl31.h>     /* Available in android-21 (5.0 Lollipop) */
 
-#define GLV_VERSION_STR "0.5.0"
-#define GLV_VERSION     0x000500
+#define GLV_VERSION_STR "0.6.0"
+#define GLV_VERSION     0x000600
 
 
 typedef struct {
@@ -112,6 +112,7 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_MASK_LEFT       0x10        // AMOTION_EVENT_BUTTON_PRIMARY   << 4
 #define GLV_MASK_MIDDLE     0x20        // AMOTION_EVENT_BUTTON_SECONDARY << 4
 #define GLV_MASK_RIGHT      0x40        // AMOTION_EVENT_BUTTON_TERTIARY  << 4
+#define GLV_MASK_REPEAT     0x800
 
 /* GLViewEvent code & state mask for GLV_EVENT_DPAD */
 #define GLV_DPAD_ACTIVE     0x01
@@ -148,7 +149,6 @@ extern void glv_showCursor(GLView* view, int on);
 extern void glv_setEventHandler(GLView* view, GLViewEvent_f func);
 extern void glv_waitEvent(GLView* view);
 extern void glv_handleEvents(GLView* view);
-extern void glv_filterRepeatKeys(GLView* view, int on);
 extern int  glv_clipboardText(GLView* view,
                        void (*func)(const char* data, int len, void* user),
                        void* user);

@@ -243,6 +243,8 @@ static void process_input(struct android_app* app) {
                     ve->code  = AKeyEvent_getKeyCode( event );
                     //        = AKeyEvent_getScanCode( event );
                     ve->state = AKeyEvent_getMetaState( event );
+                    if (AKeyEvent_getRepeatCount(event))
+                        ve->state |= GLV_MASK_REPEAT;
                     //        = AKeyEvent_getFlags( event );
                     ve->x     = 0;
                     ve->y     = 0;

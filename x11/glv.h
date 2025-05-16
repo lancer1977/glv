@@ -11,8 +11,8 @@
 
 #include <GL/glx.h>
 
-#define GLV_VERSION_STR "0.5.0"
-#define GLV_VERSION     0x000500
+#define GLV_VERSION_STR "0.6.0"
+#define GLV_VERSION     0x000600
 
 
 typedef struct {
@@ -115,6 +115,7 @@ typedef void (*GLViewEvent_f)( GLView*, GLViewEvent* );
 #define GLV_MASK_LEFT       Button1Mask
 #define GLV_MASK_MIDDLE     Button2Mask
 #define GLV_MASK_RIGHT      Button3Mask
+#define GLV_MASK_REPEAT     (1<<16)
 
 
 #ifdef __cplusplus
@@ -143,7 +144,6 @@ extern void glv_showCursor(GLView* view, int on);
 extern void glv_setEventHandler(GLView* view, GLViewEvent_f func);
 extern void glv_waitEvent(GLView* view);
 extern void glv_handleEvents(GLView* view);
-extern void glv_filterRepeatKeys(GLView* view, int on);
 extern int  glv_clipboardText(GLView* view,
                        void (*func)(const char* data, int len, void* user),
                        void* user);
