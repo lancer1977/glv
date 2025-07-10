@@ -137,7 +137,4 @@
 #define KEY_Help        AKEYCODE_HELP
 
 
-#define KEY_ASCII(ev)       glv_ascii(ev)
-
-
 #endif //GLVIEW_KEYS_H
