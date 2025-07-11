@@ -232,6 +232,7 @@ extern int  glv_ascii( const GLViewEvent* );
 extern void glv_showSoftInput( GLView* view, int visible );
 extern void glv_setDPadRect( GLView* view, int pad, const float* rect );
 #define glv_eventPinch(ev)  ((float*) &(ev)->x)
+extern const char* glv_dataPath(int external);
 
 #elif defined(_WIN32)
 

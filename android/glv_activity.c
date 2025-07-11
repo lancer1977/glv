@@ -780,3 +780,10 @@ void glv_setDPadRect( GLView* view, int pad, const float* rect )
     }
 }
 #endif
+
+const char* glv_dataPath(int external)
+{
+    ANativeActivity* activity = gGlvApp->activity;
+    return external ? activity->externalDataPath
+                    : activity->internalDataPath;
+}
