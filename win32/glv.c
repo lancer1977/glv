@@ -14,9 +14,9 @@
 #include <glv.h>
 
 
-#define FLAG_ATTRIB                 0x0007
-#define FLAG_FULLSCREEN_MODE        0x0010
-#define FLAG_FULLWINDOW_MODE        0x0020
+#define FLAG_ATTRIB                 0x001f
+#define FLAG_FULLSCREEN_MODE        0x0020
+#define FLAG_FULLWINDOW_MODE        0x0040
 #define FLAG_MINIMIZED              0x0080
 
 
@@ -437,10 +437,11 @@ static void _destroyWindow( GLView* view )
   If glv_create fails then no other glview function should be called
   (though it is safe to call glv_destroy).
 */
-GLView* glv_create( int attributes, int glVersion )
+GLView* glv_create( int attributes, int multisample, int glVersion )
 {
     GLView* view;
     WNDCLASS wc;
+    (void) multisample;
 
 
     view = (GLView*) calloc( 1, sizeof(GLView) );
@@ -478,8 +479,9 @@ GLView* glv_create( int attributes, int glVersion )
     SetProcessDPIAware();   // Windows Vista
     //SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE); // Windows 8.1
 
+    // TODO: Handle multisample, ES, & DEBUG.
     _createWindow( view, 0, attributes );
-    view->flags = attributes;
+    view->flags = attributes & (GLV_ATTRIB_DOUBLEBUFFER | GLV_ATTRIB_STENCIL);
 
 #ifdef GLEW_VERSION
     {

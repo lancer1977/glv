@@ -108,15 +108,16 @@ void glv_freeEGL( GLView* view )
   If glv_create fails then no other GLV function should be called
   (though it is safe to call glv_destroy()).
 
-  The possible attributes are GLV_ATTRIB_DOUBLEBUFFER, GLV_ATTRIB_STENCIL,
-  and GLV_ATTRIB_MULTISAMPLE.  Only RGBA visuals will be created.
+  The possible attributes are GLV_ATTRIB_DOUBLEBUFFER and GLV_ATTRIB_STENCIL.
+  Only RGBA visuals will be created.
 
   A valid view may be returned even if all attributes could not be set.
   Use glv_attributes() to check which are set.
 */
-GLView* glv_create( int attributes, int glVersion )
+GLView* glv_create( int attributes, int multisample, int glVersion )
 {
     GLView* view;
+    (void) multisample;
 
     /* On Android the GLView is actually part of android_app, so gGlvApp is
        used to get a handle to that struct. */

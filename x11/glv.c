@@ -81,7 +81,7 @@
   Adds a stencil buffer.
 
   \var GLV_ATTRIB_MULTISAMPLE
-  Adds a multisample buffer.
+  Indicates a multisample buffer is present.
 
   \var GLV_ATTRIB_ES
   Create an OpenGL ES context.
@@ -193,9 +193,9 @@
 #endif
 
 
-#define FLAG_ATTRIB                 0x000f
-#define FLAG_FULLSCREEN_MODE        0x0010
-#define FLAG_FULLWINDOW_MODE        0x0020
+#define FLAG_ATTRIB                 0x001f
+#define FLAG_FULLSCREEN_MODE        0x0020
+#define FLAG_FULLWINDOW_MODE        0x0040
 #define FLAG_CURSOR_SHOWN           0x0080
 
 #define EMASK_KEY       KeyPressMask | KeyReleaseMask
@@ -246,12 +246,12 @@ static void _setFBAttr( int* attr, int glvFlags )
     /*
     We don't want to fail if multi-sampling is requested and it's not available.
 #ifdef GLX_ARB_multisample
-    if( glvFlags & GLV_ATTRIB_MULTISAMPLE )
+    if( multisample )
     {
         *attr++ = GLX_SAMPLE_BUFFERS_ARB;
         *attr++ = 1;
         *attr++ = GLX_SAMPLES_ARB;
-        *attr++ = 2;
+        *attr++ = multisample;
     }
 #endif
     */
@@ -399,15 +399,17 @@ static void glv_nullHandler( void* v, GLViewEvent* e )
   Use glv_attributes() to check which are set.
 
   \param attributes The possible attributes are #GLV_ATTRIB_DOUBLEBUFFER,
-                    #GLV_ATTRIB_STENCIL, #GLV_ATTRIB_MULTISAMPLE,
-                    #GLV_ATTRIB_ES, and #GLV_ATTRIB_DEBUG.
+                    #GLV_ATTRIB_STENCIL, #GLV_ATTRIB_ES, and #GLV_ATTRIB_DEBUG.
                     Only RGBA visuals will be created.
+
+  \param multisample    Add a multisample buffer with this number of samples
+                        per pixel.
 
   \param glVersion  This contains the OpenGL major version in bits 8-15 and
                     the minor in bits 0-7. For example version 3.2 is 0x302.
                     If this is zero then no specific version is requested.
 */
-GLView* glv_create( int attributes, int glVersion )
+GLView* glv_create( int attributes, int multisample, int glVersion )
 {
     GLView* view;
     Display* disp;
@@ -437,7 +439,8 @@ GLView* glv_create( int attributes, int glVersion )
     // Initialize non-zero members.
     view->display      = disp;
     view->screen       = DefaultScreen( disp );
-    view->flags        = (attributes & FLAG_ATTRIB) | FLAG_CURSOR_SHOWN;
+    view->flags        = (attributes & FLAG_ATTRIB & ~GLV_ATTRIB_MULTISAMPLE)
+                         | FLAG_CURSOR_SHOWN;
     view->nullCursor   = -1;
     view->activeCursor = GLV_CURSOR_ARROW;
     view->eventHandler = glv_nullHandler;
@@ -453,21 +456,27 @@ GLView* glv_create( int attributes, int glVersion )
     }
 
 #ifdef GLX_ARB_multisample
-    if( attributes & GLV_ATTRIB_MULTISAMPLE )
+    if( multisample )
     {
         // The config array should be sorted with the highest capability modes
-        // at the end, so we're looking for the first one with the largest
-        // GLX_SAMPLES_ARB.
+        // at the end, so we look for the first GLX_SAMPLES_ARB value that
+        // matches or exceeds what is requested.  If only a smaller number of
+        // samples are supported then use the largest available.
         int i;
         int val;
         int high = 0;
         for( i = 0; i < fbCount; ++i )
         {
             glXGetFBConfigAttrib( disp, fbCfg[ i ], GLX_SAMPLES_ARB, &val );
-            if( high < val )
-            {
+            if( val >= multisample ) {
+                ci = i;
+                view->flags |= GLV_ATTRIB_MULTISAMPLE;
+                break;
+            }
+            if( high < val ) {
                 high = val;
                 ci = i;
+                view->flags |= GLV_ATTRIB_MULTISAMPLE;
             }
         }
         //printf( "KR Selected config %d\n", ci );
