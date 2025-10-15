@@ -545,6 +545,10 @@ GLView* glv_create( int attributes, int multisample, int glVersion )
             *cp++ = glVersion >> 8;
             *cp++ = GLX_CONTEXT_MINOR_VERSION_ARB;
             *cp++ = glVersion & 0xff;
+#if 0
+            *cp++ = GLX_CONTEXT_PROFILE_MASK_ARB;
+            *cp++ = GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
+#endif
         }
 
         if( attributes & GLV_ATTRIB_DEBUG )
