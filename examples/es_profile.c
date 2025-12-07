@@ -224,7 +224,7 @@ int main(int argc, char** argv)
         }
     }
 
-    view = glv_create(attr, version);
+    view = glv_create(attr, 0, version);
     if( view )
     {
         printf( "GL_VERSION: %s\n", (char*) glGetString( GL_VERSION ) );

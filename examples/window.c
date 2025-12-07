@@ -132,7 +132,7 @@ int main( int argc, char** argv )
     GLViewMode mode;
     int actions = 0;
 
-    view = glv_create( GLV_ATTRIB_DOUBLEBUFFER, 0 );
+    view = glv_create( GLV_ATTRIB_DOUBLEBUFFER, 0, 0 );
     if( view )
     {
         printExtensions();

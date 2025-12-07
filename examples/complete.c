@@ -275,7 +275,7 @@ int main( int argc, char** argv )
     }
 
 
-    gView = glv_create( GLV_ATTRIB_DOUBLEBUFFER, 0 );
+    gView = glv_create( GLV_ATTRIB_DOUBLEBUFFER, 0, 0 );
     if( ! gView )
         return( -1 );
 
@@ -301,7 +301,7 @@ int main( int argc, char** argv )
 #if VIEW2
     if( windowOnly )
     {
-        glv_create( view2, 0 );
+        glv_create( view2, 0, 0 );
         glv_funcClose( view2, close2 );
         glv_changeMode( view2, &mode );
         glv_handleEvents( view2 );
