@@ -1377,11 +1377,29 @@ void glv_hide( GLView* view )
 
 /**
   Sets window title and icon name.
+
+  This also sets WM_CLASS (res_name/res_class) from the title, since glv
+  otherwise leaves it unset. Tiling window managers (Hyprland, sway, i3)
+  rely on WM_CLASS to target window rules; without it, a fixed-size GLX
+  window with no WM_CLASS gets no special handling and can be resized into
+  a tiled slot that doesn't match the size it was created with, breaking
+  rendering and mouse-coordinate mapping.
 */
 void glv_setTitle( GLView* view, const char* title )
 {
+    XClassHint* ch;
+
     XStoreName( view->display, view->window, title );
     XSetIconName( view->display, view->window, title );
+
+    ch = XAllocClassHint();
+    if( ch )
+    {
+        ch->res_name  = (char*) title;
+        ch->res_class = (char*) title;
+        XSetClassHint( view->display, view->window, ch );
+        XFree( ch );
+    }
 }
 
 
